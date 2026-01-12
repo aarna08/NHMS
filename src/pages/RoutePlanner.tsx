@@ -5,13 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   MapPin,
   Navigation,
   Clock,
@@ -27,11 +20,13 @@ import {
   Phone,
   Flame,
   CheckCircle,
+  Map,
 } from 'lucide-react';
 import { mockRoutes } from '@/data/mockData';
 import { Route, VehicleType, EmergencyCenter } from '@/types';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { RouteMap } from '@/components/features/RouteMap';
 
 const vehicleIcons: Record<VehicleType, React.ComponentType<{ className?: string }>> = {
   car: Car,
@@ -112,6 +107,27 @@ export default function RoutePlanner() {
           <p className="text-muted-foreground">
             Find the best route with real-time traffic and toll information
           </p>
+        </div>
+
+        {/* Map Section */}
+        <div className="mb-8 animate-fade-in">
+          <div className="gov-card p-0 overflow-hidden">
+            <div className="p-4 border-b border-border flex items-center gap-2">
+              <Map className="w-5 h-5 text-accent" />
+              <h3 className="font-semibold text-foreground">Interactive Route Map</h3>
+              {selectedRoute && (
+                <span className="ml-auto text-sm text-muted-foreground">
+                  Showing: {selectedRoute.name}
+                </span>
+              )}
+            </div>
+            <RouteMap 
+              selectedRoute={selectedRoute}
+              showAllRoutes={routes.length > 0 && !selectedRoute}
+              routes={routes}
+              className="h-[400px]"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
