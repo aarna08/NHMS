@@ -1,10 +1,9 @@
-import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Route, TollPlaza, EmergencyCenter } from '@/types';
 
-// Fix for default marker icons in React-Leaflet
+// Fix for default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -100,137 +99,160 @@ interface RouteMapProps {
   className?: string;
 }
 
-function MapBoundsHandler({ coordinates }: { coordinates: [number, number][] }) {
-  const map = useMap();
-  
-  useEffect(() => {
-    if (coordinates.length > 0) {
-      const bounds = L.latLngBounds(coordinates.map(([lat, lng]) => [lat, lng]));
-      map.fitBounds(bounds, { padding: [50, 50] });
-    }
-  }, [coordinates, map]);
-
-  return null;
-}
-
 export function RouteMap({
   selectedRoute,
   showAllRoutes = false,
   routes = [],
   className = '',
 }: RouteMapProps) {
-  const center: [number, number] = [18.8, 73.35]; // Center between Mumbai and Pune
-  
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const polylinesRef = useRef<L.Polyline[]>([]);
+  const [isMapReady, setIsMapReady] = useState(false);
+
+  const center: [number, number] = [18.8, 73.35];
+
   const getRouteColor = (routeId: string, isSelected: boolean) => {
-    if (isSelected) return '#f97316'; // Orange for selected
+    if (isSelected) return '#f97316';
     const colors = ['#3b82f6', '#22c55e', '#8b5cf6'];
     const index = routes.findIndex(r => r.id === routeId);
     return colors[index % colors.length];
   };
 
-  const displayRoutes = showAllRoutes ? routes : (selectedRoute ? [selectedRoute] : []);
+  // Initialize map
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    const map = L.map(mapRef.current).setView(center, 9);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+    setIsMapReady(true);
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, []);
+
+  // Update map content
+  useEffect(() => {
+    if (!mapInstanceRef.current || !isMapReady) return;
+
+    const map = mapInstanceRef.current;
+
+    // Clear existing markers and polylines
+    markersRef.current.forEach(marker => marker.remove());
+    polylinesRef.current.forEach(polyline => polyline.remove());
+    markersRef.current = [];
+    polylinesRef.current = [];
+
+    const displayRoutes = showAllRoutes ? routes : (selectedRoute ? [selectedRoute] : []);
+
+    // Add route polylines
+    displayRoutes.forEach((route) => {
+      const coords = routeCoordinates[route.id] || routeCoordinates.route1;
+      const isSelected = selectedRoute?.id === route.id;
+      
+      const polyline = L.polyline(coords, {
+        color: getRouteColor(route.id, isSelected),
+        weight: isSelected ? 5 : 3,
+        opacity: isSelected ? 1 : 0.6,
+      }).addTo(map);
+      
+      polylinesRef.current.push(polyline);
+    });
+
+    // Add start and end markers
+    if (selectedRoute || routes.length > 0) {
+      const startMarker = L.marker([19.076, 72.8777], { icon: startIcon })
+        .bindPopup('<div class="font-semibold">Mumbai (Start)</div>')
+        .addTo(map);
+      
+      const endMarker = L.marker([18.52, 73.8567], { icon: endIcon })
+        .bindPopup('<div class="font-semibold">Pune (Destination)</div>')
+        .addTo(map);
+      
+      markersRef.current.push(startMarker, endMarker);
+    }
+
+    // Add toll plaza markers
+    if (selectedRoute?.tollPlazas) {
+      selectedRoute.tollPlazas.forEach((plaza) => {
+        const coords = tollCoordinates[plaza.id];
+        if (!coords) return;
+        
+        const marker = L.marker(coords, { icon: tollIcon })
+          .bindPopup(`
+            <div class="p-1">
+              <div class="font-semibold text-sm">${plaza.name}</div>
+              <div class="text-xs text-gray-600">${plaza.location}</div>
+              <div class="text-xs mt-1">
+                <span class="font-medium">Toll: </span>
+                Car ₹${plaza.cost.car} | Bike ₹${plaza.cost.motorcycle}
+              </div>
+            </div>
+          `)
+          .addTo(map);
+        
+        markersRef.current.push(marker);
+      });
+    }
+
+    // Add emergency center markers
+    if (selectedRoute?.emergencyCenters) {
+      selectedRoute.emergencyCenters.forEach((center) => {
+        const coords = emergencyCoordinates[center.id];
+        if (!coords) return;
+        
+        const marker = L.marker(coords, { icon: emergencyIcons[center.type] })
+          .bindPopup(`
+            <div class="p-1">
+              <div class="font-semibold text-sm">${center.name}</div>
+              <div class="text-xs text-gray-600">${center.address}</div>
+              <div class="text-xs mt-1">
+                <span class="font-medium">Phone: </span>
+                <a href="tel:${center.phone}" class="text-blue-600 hover:underline">${center.phone}</a>
+              </div>
+              <div class="text-xs">
+                <span class="font-medium">Distance: </span>${center.distance} km
+              </div>
+            </div>
+          `)
+          .addTo(map);
+        
+        markersRef.current.push(marker);
+      });
+    }
+
+    // Fit bounds to selected route
+    if (selectedRoute && routeCoordinates[selectedRoute.id]) {
+      const bounds = L.latLngBounds(routeCoordinates[selectedRoute.id]);
+      map.fitBounds(bounds, { padding: [50, 50] });
+    } else if (routes.length > 0) {
+      // Fit to all routes
+      const allCoords: [number, number][] = [];
+      routes.forEach(route => {
+        const coords = routeCoordinates[route.id];
+        if (coords) allCoords.push(...coords);
+      });
+      if (allCoords.length > 0) {
+        const bounds = L.latLngBounds(allCoords);
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+    }
+  }, [selectedRoute, showAllRoutes, routes, isMapReady]);
 
   return (
     <div className={`relative rounded-xl overflow-hidden border border-border ${className}`}>
-      <MapContainer
-        center={center}
-        zoom={9}
+      <div 
+        ref={mapRef} 
         style={{ height: '100%', width: '100%', minHeight: '400px' }}
-        scrollWheelZoom={true}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        {/* Render route polylines */}
-        {displayRoutes.map((route) => {
-          const coords = routeCoordinates[route.id] || routeCoordinates.route1;
-          const isSelected = selectedRoute?.id === route.id;
-          return (
-            <Polyline
-              key={route.id}
-              positions={coords}
-              pathOptions={{
-                color: getRouteColor(route.id, isSelected),
-                weight: isSelected ? 5 : 3,
-                opacity: isSelected ? 1 : 0.6,
-              }}
-            />
-          );
-        })}
-
-        {/* Start and End markers */}
-        {(selectedRoute || routes.length > 0) && (
-          <>
-            <Marker position={[19.076, 72.8777]} icon={startIcon}>
-              <Popup>
-                <div className="font-semibold">Mumbai (Start)</div>
-              </Popup>
-            </Marker>
-            <Marker position={[18.52, 73.8567]} icon={endIcon}>
-              <Popup>
-                <div className="font-semibold">Pune (Destination)</div>
-              </Popup>
-            </Marker>
-          </>
-        )}
-
-        {/* Toll Plaza markers */}
-        {selectedRoute?.tollPlazas.map((plaza) => {
-          const coords = tollCoordinates[plaza.id];
-          if (!coords) return null;
-          return (
-            <Marker key={plaza.id} position={coords} icon={tollIcon}>
-              <Popup>
-                <div className="p-1">
-                  <div className="font-semibold text-sm">{plaza.name}</div>
-                  <div className="text-xs text-gray-600">{plaza.location}</div>
-                  <div className="text-xs mt-1">
-                    <span className="font-medium">Toll: </span>
-                    Car ₹{plaza.cost.car} | Bike ₹{plaza.cost.motorcycle}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-
-        {/* Emergency Center markers */}
-        {selectedRoute?.emergencyCenters.map((center) => {
-          const coords = emergencyCoordinates[center.id];
-          if (!coords) return null;
-          return (
-            <Marker 
-              key={center.id} 
-              position={coords} 
-              icon={emergencyIcons[center.type]}
-            >
-              <Popup>
-                <div className="p-1">
-                  <div className="font-semibold text-sm">{center.name}</div>
-                  <div className="text-xs text-gray-600">{center.address}</div>
-                  <div className="text-xs mt-1">
-                    <span className="font-medium">Phone: </span>
-                    <a href={`tel:${center.phone}`} className="text-blue-600 hover:underline">
-                      {center.phone}
-                    </a>
-                  </div>
-                  <div className="text-xs">
-                    <span className="font-medium">Distance: </span>
-                    {center.distance} km
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-
-        {/* Fit bounds to selected route */}
-        {selectedRoute && routeCoordinates[selectedRoute.id] && (
-          <MapBoundsHandler coordinates={routeCoordinates[selectedRoute.id]} />
-        )}
-      </MapContainer>
+      />
 
       {/* Map Legend */}
       <div className="absolute bottom-4 left-4 bg-background/95 backdrop-blur-sm rounded-lg p-3 shadow-lg border border-border z-[1000]">
