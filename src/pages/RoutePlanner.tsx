@@ -21,12 +21,14 @@ import {
   Flame,
   CheckCircle,
   Map,
+  Loader2,
 } from 'lucide-react';
 import { mockRoutes } from '@/data/mockData';
 import { Route, VehicleType, EmergencyCenter } from '@/types';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { RouteMap } from '@/components/features/RouteMap';
+import { useSearchRoutes, calculateTollCost } from '@/hooks/useRoutes';
 
 const vehicleIcons: Record<VehicleType, React.ComponentType<{ className?: string }>> = {
   car: Car,
@@ -54,32 +56,61 @@ export default function RoutePlanner() {
   const [source, setSource] = useState('');
   const [destination, setDestination] = useState('');
   const [vehicleType, setVehicleType] = useState<VehicleType>('car');
-  const [routes, setRoutes] = useState<Route[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
+  const [shouldSearch, setShouldSearch] = useState(false);
+
+  // Use the API hook for fetching routes
+  const { 
+    data: apiRoutes, 
+    isLoading: isApiLoading, 
+    error: apiError,
+    isFetched: isApiFetched
+  } = useSearchRoutes(source, destination, vehicleType, shouldSearch);
+
+  // Fallback to mock data if API returns empty or fails
+  const routes: Route[] = (() => {
+    if (apiRoutes && apiRoutes.length > 0) {
+      return apiRoutes;
+    }
+    if (shouldSearch && isApiFetched && (!apiRoutes || apiRoutes.length === 0)) {
+      // Fallback to mock data with calculated toll costs
+      return mockRoutes.map((route) => ({
+        ...route,
+        tollCost: calculateTollCost(route, vehicleType),
+      }));
+    }
+    return [];
+  })();
+
+  const isSearching = isApiLoading;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  const handleSearch = async () => {
+  const handleSearch = () => {
     if (!source || !destination) return;
-    
-    setIsSearching(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    // Update toll costs based on vehicle type
-    const updatedRoutes = mockRoutes.map((route) => {
-      const totalToll = route.tollPlazas.reduce(
-        (sum, plaza) => sum + plaza.cost[vehicleType],
-        0
-      );
-      return { ...route, tollCost: totalToll };
-    });
-    
-    setRoutes(updatedRoutes);
-    setIsSearching(false);
+    setShouldSearch(true);
+  };
+
+  // Reset search when inputs change
+  const handleSourceChange = (value: string) => {
+    setSource(value);
+    setShouldSearch(false);
+  };
+
+  const handleDestinationChange = (value: string) => {
+    setDestination(value);
+    setShouldSearch(false);
+  };
+
+  const handleVehicleTypeChange = (value: VehicleType) => {
+    setVehicleType(value);
+    if (shouldSearch) {
+      // Re-trigger search with new vehicle type
+      setShouldSearch(false);
+      setTimeout(() => setShouldSearch(true), 0);
+    }
   };
 
   const getTrafficColor = (level: Route['trafficLevel']) => {
@@ -148,7 +179,7 @@ export default function RoutePlanner() {
                     <Input
                       id="source"
                       value={source}
-                      onChange={(e) => setSource(e.target.value)}
+                      onChange={(e) => handleSourceChange(e.target.value)}
                       placeholder="Enter starting location"
                       className="pl-10 gov-input"
                     />
@@ -163,7 +194,7 @@ export default function RoutePlanner() {
                     <Input
                       id="destination"
                       value={destination}
-                      onChange={(e) => setDestination(e.target.value)}
+                      onChange={(e) => handleDestinationChange(e.target.value)}
                       placeholder="Enter destination"
                       className="pl-10 gov-input"
                     />
@@ -175,7 +206,7 @@ export default function RoutePlanner() {
                   <Label>Vehicle Type</Label>
                   <RadioGroup
                     value={vehicleType}
-                    onValueChange={(value) => setVehicleType(value as VehicleType)}
+                    onValueChange={(value) => handleVehicleTypeChange(value as VehicleType)}
                     className="grid grid-cols-2 gap-3"
                   >
                     {Object.entries(vehicleLabels).map(([value, label]) => {
@@ -203,8 +234,22 @@ export default function RoutePlanner() {
                   size="lg"
                   disabled={!source || !destination || isSearching}
                 >
-                  {isSearching ? 'Searching...' : 'Find Routes'}
+                  {isSearching ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    'Find Routes'
+                  )}
                 </Button>
+
+                {/* API Error Notice */}
+                {apiError && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    Using cached route data
+                  </p>
+                )}
 
                 {/* Quick Select */}
                 <div className="pt-4 border-t border-border">
