@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Car, Shield, Stethoscope, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Car, Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { User } from '@/types';
 
 export default function Login() {
@@ -26,10 +26,8 @@ export default function Login() {
     try {
       const success = await login(email, password, role);
       if (success) {
-        if (role === 'traffic_police') {
-          navigate('/authority/traffic');
-        } else if (role === 'emergency_services') {
-          navigate('/authority/emergency');
+        if (role === 'admin') {
+          navigate('/admin');
         } else {
           navigate('/dashboard');
         }
@@ -45,8 +43,7 @@ export default function Login() {
 
   const roleOptions = [
     { value: 'traveller', label: 'Traveller', icon: Car, description: 'Highway users' },
-    { value: 'traffic_police', label: 'Traffic Police', icon: Shield, description: 'Law enforcement' },
-    { value: 'emergency_services', label: 'Emergency Services', icon: Stethoscope, description: 'Medical/Fire' },
+    { value: 'admin', label: 'Admin', icon: Shield, description: 'System administrator' },
   ];
 
   return (

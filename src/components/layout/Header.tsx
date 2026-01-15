@@ -33,10 +33,8 @@ export function Header() {
   const getDashboardLink = () => {
     if (!user) return '/dashboard';
     switch (user.role) {
-      case 'traffic_police':
-        return '/authority/traffic';
-      case 'emergency_services':
-        return '/authority/emergency';
+      case 'admin':
+        return '/admin';
       default:
         return '/dashboard';
     }

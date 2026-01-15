@@ -11,8 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import RoutePlanner from "./pages/RoutePlanner";
 import SpeedMonitor from "./pages/SpeedMonitor";
 import Emergency from "./pages/Emergency";
-import TrafficAuthority from "./pages/authority/TrafficAuthority";
-import EmergencyAuthority from "./pages/authority/EmergencyAuthority";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,8 +31,7 @@ const App = () => (
             <Route path="/route-planner" element={<RoutePlanner />} />
             <Route path="/speed-monitor" element={<SpeedMonitor />} />
             <Route path="/emergency" element={<Emergency />} />
-            <Route path="/authority/traffic" element={<TrafficAuthority />} />
-            <Route path="/authority/emergency" element={<EmergencyAuthority />} />
+            <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
