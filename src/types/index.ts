@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'traveller' | 'traffic_police' | 'emergency_services';
+  role: 'traveller' | 'admin';
   vehicleNumber?: string;
 }
 

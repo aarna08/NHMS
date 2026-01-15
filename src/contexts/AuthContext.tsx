@@ -23,22 +23,13 @@ const mockUsers: Record<string, { password: string; user: User }> = {
       vehicleNumber: 'MH-01-AB-1234',
     },
   },
-  'police@nhms.gov': {
+  'admin@nhms.gov': {
     password: 'password123',
     user: {
       id: '2',
-      name: 'Inspector Sharma',
-      email: 'police@nhms.gov',
-      role: 'traffic_police',
-    },
-  },
-  'emergency@nhms.gov': {
-    password: 'password123',
-    user: {
-      id: '3',
-      name: 'Dr. Priya Singh',
-      email: 'emergency@nhms.gov',
-      role: 'emergency_services',
+      name: 'Admin User',
+      email: 'admin@nhms.gov',
+      role: 'admin',
     },
   },
 };
