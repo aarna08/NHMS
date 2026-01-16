@@ -47,24 +47,24 @@ export default function Register() {
 
     setIsLoading(true);
 
-    try {
-      const success = await register(
-        formData.name,
-        formData.email,
-        formData.password,
-        formData.vehicleNumber
-      );
-      if (success) {
-        navigate('/dashboard');
-      } else {
-        setError('Email already registered or confirmation required. Please login.');
-      }
-    } catch (err) {
-      setError('Registration failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+   try {
+  const success = await register(
+    formData.name,
+    formData.email,
+    formData.password,
+    formData.vehicleNumber
+  )
+
+  if (success) {
+    navigate('/dashboard')
+  } else {
+    setError('Signup failed. Check console for error.')
+  }
+} catch (err: any) {
+  console.error('REGISTER PAGE ERROR:', err)
+  setError(err?.message || 'Signup crashed')
+}
+
 
   return (
     <div className="min-h-screen flex bg-background">
