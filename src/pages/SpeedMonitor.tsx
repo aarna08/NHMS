@@ -70,8 +70,8 @@ export default function SpeedMonitor() {
   const currentSection = roadSections[currentSectionIndex];
 
   // Get speed from GPS or simulation
-  const displaySpeed = useRealLocation && liveLocation?.speed !== null 
-    ? Math.round((liveLocation.speed ?? 0) * 3.6) // Convert m/s to km/h
+  const displaySpeed = useRealLocation && liveLocation && liveLocation.speed !== null 
+    ? Math.round(liveLocation.speed * 3.6) // Convert m/s to km/h
     : speedData.currentSpeed;
 
   // Simulate speed changes (fallback when not using real location)
