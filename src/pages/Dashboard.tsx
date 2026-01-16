@@ -27,7 +27,7 @@ export default function Dashboard() {
     { title: 'Route Planner', icon: MapPin, description: 'Plan your journey', link: '/route-planner', color: 'bg-accent' },
     { title: 'Speed Monitor', icon: Gauge, description: 'Check your speed', link: '/speed-monitor', color: 'bg-success' },
     { title: 'Emergency', icon: Hospital, description: 'Get help now', link: '/emergency', color: 'bg-emergency' },
-    { title: 'Chat Assistant', icon: MessageCircle, description: 'Ask questions', link: '#', color: 'bg-primary' },
+    { title: 'Chat Assistant', icon: MessageCircle, description: 'Ask questions', link: null, color: 'bg-primary', action: 'openChat' },
   ];
 
   const getWeatherIcon = () => {
@@ -64,10 +64,33 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {quickActions.map((action, idx) => {
             const Icon = action.icon;
+            
+            // Handle Chat Assistant separately - trigger click on chatbot button
+            if (action.action === 'openChat') {
+              return (
+                <button
+                  key={action.title}
+                  onClick={() => {
+                    // Find and click the chatbot button
+                    const chatButton = document.querySelector('[aria-label="Open chat assistant"]') as HTMLButtonElement;
+                    if (chatButton) chatButton.click();
+                  }}
+                  className="gov-card group hover:scale-105 transition-all duration-300 text-left"
+                  style={{ animationDelay: `${idx * 100}ms` }}
+                >
+                  <div className={`w-12 h-12 rounded-xl ${action.color} flex items-center justify-center mb-4 group-hover:shadow-glow transition-shadow`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-1">{action.title}</h3>
+                  <p className="text-sm text-muted-foreground">{action.description}</p>
+                </button>
+              );
+            }
+            
             return (
               <Link
                 key={action.title}
-                to={action.link}
+                to={action.link!}
                 className="gov-card group hover:scale-105 transition-all duration-300"
                 style={{ animationDelay: `${idx * 100}ms` }}
               >
