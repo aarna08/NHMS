@@ -14,9 +14,10 @@ import {
   RotateCcw,
   Navigation,
   Satellite,
+  ArrowLeft,
 } from 'lucide-react';
 import { SpeedData } from '@/types';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
@@ -39,6 +40,7 @@ const roadSections = [
 ];
 
 export default function SpeedMonitor() {
+  const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [speedData, setSpeedData] = useState<SpeedData>({
@@ -183,6 +185,14 @@ export default function SpeedMonitor() {
     <Layout>
       <div className="gov-container py-8">
         <div className="mb-8 animate-fade-in">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(-1)} 
+            className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">Speed Monitor</h1>

@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { Layout } from '@/components/layout/Layout';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Car, Phone, Mail, Shield, Save } from 'lucide-react';
+import { User, Car, Phone, Mail, Shield, Save, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Profile() {
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -44,6 +45,14 @@ export default function Profile() {
     <Layout>
       <div className="gov-container py-8">
         <div className="mb-8 animate-fade-in">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(-1)} 
+            className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
           <h1 className="text-3xl font-bold text-foreground mb-2">My Profile</h1>
           <p className="text-muted-foreground">
             View and manage your account information
