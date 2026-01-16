@@ -63,6 +63,7 @@ export default function SpeedMonitor() {
     locationHistory 
   } = useLiveLocation();
 
+  // Move auth check AFTER all hooks
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
