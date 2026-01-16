@@ -60,12 +60,13 @@ export default function Index() {
   return (
     <Layout showChatbot={false}>
       {/* Hero Section */}
-      <section
-  className="relative overflow-hidden bg-cover bg-center bg-no-repeat"
+  <section
+  className="relative min-h-screen overflow-hidden bg-cover bg-center bg-no-repeat"
   style={{ backgroundImage: "url('/background.jpeg')" }}
 >
 
-        <div className="absolute inset-0 bg-black/60" />
+        <div className="absolute inset-0 bg-black/20" />
+
 
         <div className="absolute top-0 right-0 w-1/2 h-full opacity-10">
           <div className="absolute top-20 right-20 w-64 h-64 bg-accent rounded-full blur-3xl" />
