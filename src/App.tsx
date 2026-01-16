@@ -12,6 +12,7 @@ import RoutePlanner from "./pages/RoutePlanner";
 import SpeedMonitor from "./pages/SpeedMonitor";
 import Emergency from "./pages/Emergency";
 import Admin from "./pages/Admin";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/speed-monitor" element={<SpeedMonitor />} />
             <Route path="/emergency" element={<Emergency />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

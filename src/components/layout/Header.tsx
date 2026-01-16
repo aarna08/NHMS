@@ -94,7 +94,7 @@ export function Header() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem className="gap-2">
+                    <DropdownMenuItem onClick={() => navigate('/profile')} className="gap-2 cursor-pointer">
                       <User className="w-4 h-4" />
                       Profile
                     </DropdownMenuItem>
