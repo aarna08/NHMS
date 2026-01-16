@@ -15,9 +15,10 @@ import {
   Bandage,
   Activity,
   Thermometer,
+  ArrowLeft,
 } from 'lucide-react';
 import { emergencyCenters, firstAidInstructions } from '@/data/mockData';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Accordion,
@@ -41,6 +42,7 @@ const firstAidIcons: Record<string, React.ComponentType<{ className?: string }>>
 };
 
 export default function Emergency() {
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [micActive, setMicActive] = useState(false);
 
@@ -59,6 +61,14 @@ export default function Emergency() {
     <Layout>
       <div className="gov-container py-8">
         <div className="mb-8 animate-fade-in">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(-1)} 
+            className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
           <h1 className="text-3xl font-bold text-foreground mb-2">Emergency Assistance</h1>
           <p className="text-muted-foreground">
             Quick access to emergency services and first aid instructions

@@ -22,10 +22,11 @@ import {
   CheckCircle,
   Map,
   Loader2,
+  ArrowLeft,
 } from 'lucide-react';
 import { mockRoutes } from '@/data/mockData';
 import { Route, VehicleType, EmergencyCenter } from '@/types';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { RouteMap } from '@/components/features/RouteMap';
 import { useSearchRoutes, calculateTollCost } from '@/hooks/useRoutes';
@@ -52,6 +53,7 @@ const emergencyIcons: Record<EmergencyCenter['type'], React.ComponentType<{ clas
 };
 
 export default function RoutePlanner() {
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [source, setSource] = useState('');
   const [destination, setDestination] = useState('');
@@ -134,6 +136,14 @@ export default function RoutePlanner() {
     <Layout>
       <div className="gov-container py-8">
         <div className="mb-8 animate-fade-in">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(-1)} 
+            className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
           <h1 className="text-3xl font-bold text-foreground mb-2">Route Planner</h1>
           <p className="text-muted-foreground">
             Find the best route with real-time traffic and toll information
