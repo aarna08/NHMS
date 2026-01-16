@@ -57,7 +57,7 @@ export default function Register() {
       if (success) {
         navigate('/dashboard');
       } else {
-        setError('Registration failed. Please try again.');
+        setError('Email already registered or confirmation required. Please login.');
       }
     } catch (err) {
       setError('Registration failed. Please try again.');
