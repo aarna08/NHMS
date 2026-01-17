@@ -17,6 +17,7 @@ export default function Register() {
     vehicleNumber: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false); 
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,41 +33,44 @@ export default function Register() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
+  setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
+  // Validate password match
+  if (formData.password !== formData.confirmPassword) {
+    setError('Passwords do not match');
+    return;
+  }
 
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
+  // Validate all password requirements
+  const allRequirementsMet = passwordRequirements.every(req => req.met);
+  if (!allRequirementsMet) {
+    setError('Please meet all password requirements');
+    return;
+  }
 
-    setIsLoading(true);
+  setIsLoading(true);
 
   try {
-  const success = await register(
-    formData.name,
-    formData.email,
-    formData.password,
-    formData.vehicleNumber
-  )
+    const success = await register(
+      formData.name,
+      formData.email,
+      formData.password,
+      formData.vehicleNumber
+    );
 
-  if (success) {
-    navigate('/login') // correct flow
-  } else {
-    setError('Signup failed. Please try again.')
+    if (success) {
+      navigate('/login');
+    } else {
+      setError('Signup failed. Please try again.');
+    }
+  } catch (err: any) {
+    console.error('REGISTER PAGE ERROR:', err);
+    setError(err?.message || 'Signup failed. Please try again.');
+  } finally {
+    setIsLoading(false);
   }
-} catch (err: any) {
-  console.error('REGISTER PAGE ERROR:', err)
-  setError(err?.message || 'Signup crashed')
-} finally {
-  setIsLoading(false)
-}
-  }
+};
 
 
   return (
@@ -199,20 +203,28 @@ export default function Register() {
             </div>
 
             {/* Confirm Password */}
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm your password"
-                required
-                className="gov-input"
-              />
-            </div>
-
+<div className="space-y-2">
+  <Label htmlFor="confirmPassword">Confirm Password</Label>
+  <div className="relative">
+    <Input
+      id="confirmPassword"
+      name="confirmPassword"
+      type={showConfirmPassword ? 'text' : 'password'}
+      value={formData.confirmPassword}
+      onChange={handleChange}
+      placeholder="Confirm your password"
+      required
+      className="gov-input pr-10"
+    />
+    <button
+      type="button"
+      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+    >
+      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+    </button>
+  </div>
+</div>
             {/* Error Message */}
             {error && (
               <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-lg">
