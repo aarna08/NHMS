@@ -47,7 +47,7 @@ export default function Register() {
 
     setIsLoading(true);
 
-   try {
+  try {
   const success = await register(
     formData.name,
     formData.email,
@@ -55,15 +55,18 @@ export default function Register() {
     formData.vehicleNumber
   )
 
- if (success) {
-  navigate('/login') // NOT dashboard
-} else {
-  setError('Signup failed. Check console.')
-}
+  if (success) {
+    navigate('/login') // correct flow
+  } else {
+    setError('Signup failed. Please try again.')
+  }
 } catch (err: any) {
   console.error('REGISTER PAGE ERROR:', err)
   setError(err?.message || 'Signup crashed')
+} finally {
+  setIsLoading(false)
 }
+  }
 
 
   return (
