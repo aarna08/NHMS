@@ -9,8 +9,6 @@ import {
   MapPin,
   Volume2,
   VolumeX,
-  Play,
-  Pause,
   RotateCcw,
   Navigation,
   Satellite,
@@ -64,6 +62,14 @@ export default function SpeedMonitor() {
     stopTracking,
     locationHistory 
   } = useLiveLocation();
+
+  // Auto-start monitoring on mount
+  useEffect(() => {
+    setIsMonitoring(true);
+    if (useRealLocation) {
+      startTracking();
+    }
+  }, []);
 
   // Move auth check AFTER all hooks
   if (!isAuthenticated) {
@@ -286,15 +292,6 @@ export default function SpeedMonitor() {
 
                 {/* Controls */}
                 <div className="flex items-center justify-center gap-4">
-                  <Button
-                    onClick={isMonitoring ? handleStopMonitoring : handleStartMonitoring}
-                    variant={isMonitoring ? 'destructive' : 'success'}
-                    size="lg"
-                    className="gap-2"
-                  >
-                    {isMonitoring ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                    {isMonitoring ? 'Stop Monitoring' : 'Start Monitoring'}
-                  </Button>
                   <Button onClick={handleReset} variant="outline" size="lg">
                     <RotateCcw className="w-5 h-5" />
                   </Button>
@@ -456,14 +453,6 @@ export default function SpeedMonitor() {
                 <div className="gov-card">
                   <h3 className="font-semibold text-foreground mb-4">Quick Actions</h3>
                   <div className="space-y-2">
-                    <Button
-                      onClick={isMonitoring ? handleStopMonitoring : handleStartMonitoring}
-                      variant={isMonitoring ? 'destructive' : 'success'}
-                      className="w-full gap-2"
-                    >
-                      {isMonitoring ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                      {isMonitoring ? 'Stop Tracking' : 'Start Tracking'}
-                    </Button>
                     <Button onClick={handleReset} variant="outline" className="w-full gap-2">
                       <RotateCcw className="w-4 h-4" />
                       Reset Session
