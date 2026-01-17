@@ -47,6 +47,36 @@ const mockUsers: Record<string, { password: string; user: User }> = {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // ✅ Load mockUsers from localStorage on startup
+  const [users, setUsers] = useState<Record<string, { password: string; user: User }>>(() => {
+    const saved = localStorage.getItem('nhms_users')
+    if (saved) {
+      return JSON.parse(saved)
+    }
+    // Return default demo users
+    return {
+      'traveller@nhms.gov': {
+        password: 'password123',
+        user: {
+          id: '1',
+          name: 'Demo Traveller',
+          email: 'traveller@nhms.gov',
+          role: 'traveller',
+          vehicleNumber: 'MH-01-AB-1234',
+        },
+      },
+      'admin@nhms.gov': {
+        password: 'password123',
+        user: {
+          id: '2',
+          name: 'Demo Admin',
+          email: 'admin@nhms.gov',
+          role: 'admin',
+        },
+      },
+    }
+  })
+
   const [user, setUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('nhms_user')
     return saved ? JSON.parse(saved) : null
@@ -54,43 +84,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ✅ DEMO LOGIN
   const login = async (email: string, password: string) => {
-    const record = mockUsers[email]
-
+    const record = users[email]
     if (record && record.password === password) {
       setUser(record.user)
       localStorage.setItem('nhms_user', JSON.stringify(record.user))
       return true
     }
-
     return false
   }
 
   // ✅ DEMO REGISTER
-  // ✅ DEMO REGISTER
-const register = async (
-  name: string,
-  email: string,
-  password: string,
-  vehicleNumber?: string
-) => {
-  const newUser: User = {
-    id: Date.now().toString(),
-    name,
-    email,
-    role: 'traveller',
-    vehicleNumber,
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    vehicleNumber?: string
+  ) => {
+    const newUser: User = {
+      id: Date.now().toString(),
+      name,
+      email,
+      role: 'traveller',
+      vehicleNumber,
+    }
+    
+    // ✅ Save to users state and localStorage
+    const updatedUsers = {
+      ...users,
+      [email]: {
+        password: password,
+        user: newUser,
+      },
+    }
+    
+    setUsers(updatedUsers)
+    localStorage.setItem('nhms_users', JSON.stringify(updatedUsers))
+    
+    return true
   }
-  
-  // ✅ ADD: Save to mockUsers so login can find it
-  mockUsers[email] = {
-    password: password,
-    user: newUser,
-  }
-  
-  // Don't set user or save to localStorage during registration
-  // User should login after registering
-  return true
-}
 
   const logout = () => {
     setUser(null)
