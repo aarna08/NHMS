@@ -55,11 +55,11 @@ export default function Register() {
     formData.vehicleNumber
   )
 
-  if (success) {
-    navigate('/dashboard')
-  } else {
-    setError('Signup failed. Check console for error.')
-  }
+ if (success) {
+  navigate('/login') // NOT dashboard
+} else {
+  setError('Signup failed. Check console.')
+}
 } catch (err: any) {
   console.error('REGISTER PAGE ERROR:', err)
   setError(err?.message || 'Signup crashed')
