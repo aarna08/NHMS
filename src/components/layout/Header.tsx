@@ -19,6 +19,7 @@ import {
   Phone,
   ChevronDown
 } from 'lucide-react';
+import logoImage from '@/assets/logo.jpeg';
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -46,17 +47,14 @@ export function Header() {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo and Title */}
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-accent flex items-center justify-center shadow-glow">
-              <Car className="w-5 h-5 md:w-6 md:h-6 text-accent-foreground" />
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="text-primary-foreground font-bold text-lg md:text-xl leading-tight">
-                NHMS
-              </h1>
-              <p className="text-primary-foreground/70 text-xs md:text-sm">
-                National Highway Management System
-              </p>
-            </div>
+            <img 
+              src={logoImage} 
+              alt="NHMS Logo" 
+              className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover shadow-glow"
+            />
+            <h1 className="hidden sm:block text-primary-foreground font-bold text-lg md:text-xl leading-tight">
+              NHMS
+            </h1>
           </Link>
 
           {/* Desktop Navigation */}
