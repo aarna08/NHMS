@@ -2,18 +2,14 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Layout } from '@/components/layout/Layout';
 import {
-  Car,
   MapPin,
   IndianRupee,
   AlertTriangle,
-  Shield,
-  Clock,
-  Phone,
   ChevronRight,
-  CheckCircle2,
   Gauge,
   Cloud,
   MessageCircle,
+  Phone,
 } from 'lucide-react';
 
 const features = [
@@ -98,46 +94,6 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Hero Illustration */}
-            <div className="hidden lg:block relative">
-              <div className="relative bg-white/5 backdrop-blur-sm rounded-3xl p-8 border border-white/10">
-                <div className="space-y-4">
-                  {/* Mini Route Card */}
-                  <div className="bg-white/10 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-primary-foreground font-medium">Mumbai → Pune</span>
-                      <span className="text-accent font-bold">₹265</span>
-                    </div>
-                    <div className="flex gap-4 text-sm text-primary-foreground/70">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" /> 94 km
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" /> 1h 35m
-                      </span>
-                    </div>
-                  </div>
-                  {/* Speed Indicator */}
-                  <div className="bg-success/20 rounded-xl p-4 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-success/30 flex items-center justify-center">
-                      <Gauge className="w-6 h-6 text-success" />
-                    </div>
-                    <div>
-                      <p className="text-primary-foreground font-medium">Speed: 78 km/h</p>
-                      <p className="text-sm text-success">Within safe limit</p>
-                    </div>
-                  </div>
-                  {/* Emergency */}
-                  <div className="bg-white/10 rounded-xl p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-5 h-5 text-emergency" />
-                      <span className="text-primary-foreground">Highway Helpline</span>
-                    </div>
-                    <span className="text-2xl font-bold text-emergency">1033</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
