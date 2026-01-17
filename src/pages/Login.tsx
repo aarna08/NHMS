@@ -24,16 +24,13 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const success = await login(email, password, role);
-      if (success) {
-        if (role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/dashboard');
-        }
-      } else {
-        setError('Invalid credentials. Please try again.');
-      }
+   const success = await login(email, password);
+
+if (success) {
+  navigate('/dashboard');
+} else {
+  setError('Invalid credentials. Please try again.');
+}
     } catch (err) {
       setError('Login failed. Please try again.');
     } finally {
@@ -41,11 +38,7 @@ export default function Login() {
     }
   };
 
-  const roleOptions = [
-    { value: 'traveller', label: 'Traveller', icon: Car, description: 'Highway users' },
-    { value: 'admin', label: 'Admin', icon: Shield, description: 'System administrator' },
-  ];
-
+  
   return (
     <div className="min-h-screen flex bg-background">
       {/* Left Panel - Decorative */}
