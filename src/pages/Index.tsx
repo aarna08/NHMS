@@ -76,10 +76,6 @@ export default function Index() {
         <div className="gov-container relative z-10 py-20 lg:py-32">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="animate-fade-in">
-              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur px-4 py-2 rounded-full text-primary-foreground/80 text-sm mb-6">
-                <Shield className="w-4 h-4" />
-                Government of India Initiative
-              </div>
               <h1 className="text-4xl lg:text-6xl font-bold text-primary-foreground mb-6 leading-tight">
                 National Highway<br />
                 <span className="text-accent">Management System</span>
