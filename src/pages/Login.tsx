@@ -4,16 +4,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Car, Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { User } from '@/types';
+import { Car, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<User['role']>('traveller');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -88,36 +85,6 @@ if (success) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Role Selection */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Login as</Label>
-              <RadioGroup
-                value={role}
-                onValueChange={(value) => setRole(value as User['role'])}
-                className="grid grid-cols-3 gap-3"
-              >
-                {roleOptions.map((option) => {
-                  const Icon = option.icon;
-                  return (
-                    <div key={option.value}>
-                      <RadioGroupItem
-                        value={option.value}
-                        id={option.value}
-                        className="peer sr-only"
-                      />
-                      <Label
-                        htmlFor={option.value}
-                        className="flex flex-col items-center justify-center p-4 border-2 border-muted rounded-lg cursor-pointer transition-all hover:border-accent peer-data-[state=checked]:border-accent peer-data-[state=checked]:bg-accent/5"
-                      >
-                        <Icon className="w-6 h-6 mb-2 text-muted-foreground peer-data-[state=checked]:text-accent" />
-                        <span className="text-xs font-medium text-center">{option.label}</span>
-                      </Label>
-                    </div>
-                  );
-                })}
-              </RadioGroup>
-            </div>
-
             {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>

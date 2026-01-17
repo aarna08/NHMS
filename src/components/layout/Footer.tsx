@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer className="bg-primary text-primary-foreground mt-auto">
       <div className="gov-container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Logo and About */}
           <div className="md:col-span-1">
             <div className="flex items-center gap-3 mb-4">
@@ -19,17 +19,6 @@ export function Footer() {
             <p className="text-sm text-primary-foreground/70">
               Ensuring safer highways and efficient travel across the nation.
             </p>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h4 className="font-semibold text-sm uppercase tracking-wider mb-4">Quick Links</h4>
-            <ul className="space-y-2 text-sm text-primary-foreground/70">
-              <li><a href="#" className="hover:text-primary-foreground transition-colors">Route Planner</a></li>
-              <li><a href="#" className="hover:text-primary-foreground transition-colors">Toll Calculator</a></li>
-              <li><a href="#" className="hover:text-primary-foreground transition-colors">Traffic Updates</a></li>
-              <li><a href="#" className="hover:text-primary-foreground transition-colors">Safety Guidelines</a></li>
-            </ul>
           </div>
 
           {/* Emergency */}
