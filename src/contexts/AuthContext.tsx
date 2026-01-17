@@ -59,33 +59,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ✅ REAL REGISTER (this creates user in Supabase Auth)
   const register = useCallback(
-    async (
-      name: string,
-      email: string,
-      password: string,
-      vehicleNumber?: string
-    ) => {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: name,
-            vehicle_number: vehicleNumber,
-            role: 'traveller',
-          },
+  async (name, email, password, vehicleNumber) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+          vehicle_number: vehicleNumber,
+          role: 'traveller',
         },
-      })
+      },
+    })
 
-      if (error) {
-        console.error('Signup error:', error.message)
-        return false
-      }
+    if (error) {
+      console.error('Signup error:', error.message)
+      return false
+    }
 
-      return true
-    },
-    []
-  )
+    // EVEN IF user is null (email confirmation), signup succeeded
+    return true
+  },
+  []
+)
 
   // ✅ REAL LOGOUT
   const logout = useCallback(async () => {
