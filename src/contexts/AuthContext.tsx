@@ -66,24 +66,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // ✅ DEMO REGISTER
-  const register = async (
-    name: string,
-    email: string,
-    password: string,
-    vehicleNumber?: string
-  ) => {
-    const newUser: User = {
-      id: Date.now().toString(),
-      name,
-      email,
-      role: 'traveller',
-      vehicleNumber,
-    }
-
-    setUser(newUser)
-    localStorage.setItem('nhms_user', JSON.stringify(newUser))
-    return true
+  // ✅ DEMO REGISTER
+const register = async (
+  name: string,
+  email: string,
+  password: string,
+  vehicleNumber?: string
+) => {
+  const newUser: User = {
+    id: Date.now().toString(),
+    name,
+    email,
+    role: 'traveller',
+    vehicleNumber,
   }
+  
+  // ✅ ADD: Save to mockUsers so login can find it
+  mockUsers[email] = {
+    password: password,
+    user: newUser,
+  }
+  
+  // Don't set user or save to localStorage during registration
+  // User should login after registering
+  return true
+}
 
   const logout = () => {
     setUser(null)
