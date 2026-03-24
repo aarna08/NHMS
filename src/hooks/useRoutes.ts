@@ -15,12 +15,22 @@ const API_URL = 'http://localhost:3000/api';
 async function fetchRoutes(
   source?: string,
   destination?: string,
-  vehicleType: VehicleType = 'car'
+  vehicleType: VehicleType = 'car',
+  sourceCoords?: { lat: number; lon: number } | null,
+  destCoords?: { lat: number; lon: number } | null
 ): Promise<Route[]> {
   const params = new URLSearchParams();
   if (source) params.append('source', source);
   if (destination) params.append('destination', destination);
   params.append('vehicleType', vehicleType);
+  if (sourceCoords) {
+    params.append('srcLat', sourceCoords.lat.toString());
+    params.append('srcLon', sourceCoords.lon.toString());
+  }
+  if (destCoords) {
+    params.append('destLat', destCoords.lat.toString());
+    params.append('destLon', destCoords.lon.toString());
+  }
 
   const response = await fetch(`${API_URL}/routes?${params.toString()}`, {
     headers: {
@@ -76,13 +86,16 @@ export function useSearchRoutes(
   source: string,
   destination: string,
   vehicleType: VehicleType,
-  shouldSearch: boolean
+  shouldSearch: boolean,
+  sourceCoords?: { lat: number; lon: number } | null,
+  destCoords?: { lat: number; lon: number } | null
 ) {
   return useQuery({
-    queryKey: ['routes', 'search', { source, destination, vehicleType }],
-    queryFn: () => fetchRoutes(source, destination, vehicleType),
+    queryKey: ['routes', 'search', { source, destination, vehicleType, sourceCoords, destCoords }],
+    queryFn: () => fetchRoutes(source, destination, vehicleType, sourceCoords, destCoords),
     enabled: shouldSearch && !!source && !!destination,
     staleTime: 5 * 60 * 1000,
+    retry: false,
   });
 }
 

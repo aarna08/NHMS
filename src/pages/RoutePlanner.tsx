@@ -31,6 +31,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { RouteMap } from '@/components/features/RouteMap';
 import { useSearchRoutes, calculateTollCost } from '@/hooks/useRoutes';
+import { useAutocomplete } from '@/hooks/useAutocomplete';
 
 const vehicleIcons: Record<VehicleType, React.ComponentType<{ className?: string }>> = {
   car: Car,
@@ -62,6 +63,16 @@ export default function RoutePlanner() {
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [shouldSearch, setShouldSearch] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [showSourceSuggestions, setShowSourceSuggestions] = useState(false);
+  const [showDestSuggestions, setShowDestSuggestions] = useState(false);
+  
+  // Store exact coordinates if selected from autocomplete to avoid re-geocoding errors
+  const [sourceCoords, setSourceCoords] = useState<{lat: number, lon: number} | null>(null);
+  const [destCoords, setDestCoords] = useState<{lat: number, lon: number} | null>(null);
+
+  // Autocomplete hooks
+  const { suggestions: sourceSuggestions, isLoading: sourceAutoLoading, clearSuggestions: clearSourceSuggestions } = useAutocomplete(source, showSourceSuggestions);
+  const { suggestions: destSuggestions, isLoading: destAutoLoading, clearSuggestions: clearDestSuggestions } = useAutocomplete(destination, showDestSuggestions);
 
   // Fetch current location
   const handleCurrentLocation = () => {
@@ -78,6 +89,7 @@ export default function RoutePlanner() {
           const data = await res.json();
           if (data.success && data.exactAddress) {
             setSource(data.exactAddress);
+            setSourceCoords({ lat: position.coords.latitude, lon: position.coords.longitude });
             setShouldSearch(false);
           } else {
             setSource('Current Location');
@@ -103,10 +115,11 @@ export default function RoutePlanner() {
     isLoading: isApiLoading, 
     error: apiError,
     isFetched: isApiFetched
-  } = useSearchRoutes(source, destination, vehicleType, shouldSearch);
+  } = useSearchRoutes(source, destination, vehicleType, shouldSearch, sourceCoords, destCoords);
 
-  // Fallback to mock data if API returns empty or fails
+  // Fallback to mock data if API returns empty but NO error occurred
   const routes: Route[] = (() => {
+    if (apiError) return [];
     if (apiRoutes && apiRoutes.length > 0) {
       return apiRoutes;
     }
@@ -134,12 +147,30 @@ export default function RoutePlanner() {
   // Reset search when inputs change
   const handleSourceChange = (value: string) => {
     setSource(value);
+    setSourceCoords(null); // Reset coords if user manually edits
     setShouldSearch(false);
+    setShowSourceSuggestions(true);
   };
 
   const handleDestinationChange = (value: string) => {
     setDestination(value);
+    setDestCoords(null); // Reset coords if user manually edits
     setShouldSearch(false);
+    setShowDestSuggestions(true);
+  };
+
+  const handleSourceSelect = (displayName: string, lat: number, lon: number) => {
+    setSource(displayName);
+    setSourceCoords({ lat, lon });
+    setShowSourceSuggestions(false);
+    clearSourceSuggestions();
+  };
+
+  const handleDestSelect = (displayName: string, lat: number, lon: number) => {
+    setDestination(displayName);
+    setDestCoords({ lat, lon });
+    setShowDestSuggestions(false);
+    clearDestSuggestions();
   };
 
   const handleVehicleTypeChange = (value: VehicleType) => {
@@ -171,29 +202,29 @@ export default function RoutePlanner() {
   return (
     <Layout>
       <div className="gov-container py-8">
-        <div className="mb-8 animate-fade-in">
+        <div className="mb-10 animate-fade-in text-center lg:text-left">
           <Button 
             variant="ghost" 
             onClick={() => navigate(-1)} 
-            className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
+            className="mb-6 gap-2 text-muted-foreground hover:text-foreground bg-background/50 hover:bg-background/80 backdrop-blur-sm transition-all rounded-full px-6"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Route Planner</h1>
-          <p className="text-muted-foreground">
-            Find the best route with real-time traffic and toll information
+          <h1 className="text-4xl lg:text-5xl font-extrabold text-foreground mb-4 tracking-tight">Route <span className="text-gradient">Planner</span></h1>
+          <p className="text-lg text-muted-foreground font-light">
+            Plan your intelligent journey with precise real-time traffic, dynamic toll cost calculation, and more.
           </p>
         </div>
 
         {/* Map Section */}
-        <div className="mb-8 animate-fade-in">
-          <div className="gov-card p-0 overflow-hidden">
-            <div className="p-4 border-b border-border flex items-center gap-2">
-              <Map className="w-5 h-5 text-accent" />
-              <h3 className="font-semibold text-foreground">Interactive Route Map</h3>
+        <div className="mb-12 animate-fade-in relative z-10">
+          <div className="glass-card p-0 overflow-hidden shadow-2xl border border-white/20 dark:border-white/10">
+            <div className="px-6 py-4 bg-background/40 backdrop-blur-md border-b border-white/20 dark:border-white/10 flex items-center gap-3">
+              <Map className="w-6 h-6 text-primary" />
+              <h3 className="font-bold text-lg text-foreground tracking-wide">Interactive Route Map</h3>
               {selectedRoute && (
-                <span className="ml-auto text-sm text-muted-foreground">
+                <span className="ml-auto text-sm font-medium text-primary px-3 py-1 bg-primary/10 rounded-full">
                   Showing: {selectedRoute.name}
                 </span>
               )}
@@ -210,9 +241,9 @@ export default function RoutePlanner() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Search Panel */}
           <div className="lg:col-span-1">
-            <div className="gov-card sticky top-24">
-              <h3 className="font-semibold text-foreground mb-6 flex items-center gap-2">
-                <RouteIcon className="w-5 h-5 text-accent" />
+            <div className="glass-card sticky top-28 p-6 lg:p-8 animate-slide-up bg-white/40 dark:bg-black/20 shadow-xl border border-white/30 dark:border-white/10">
+              <h3 className="font-bold text-xl text-foreground mb-8 flex items-center gap-3 border-b border-border/50 pb-4">
+                <RouteIcon className="w-6 h-6 text-primary" />
                 Plan Your Journey
               </h3>
 
@@ -222,14 +253,39 @@ export default function RoutePlanner() {
                   <Label htmlFor="source">Starting Point</Label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-success" />
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-success z-10" />
                       <Input
                         id="source"
                         value={source}
                         onChange={(e) => handleSourceChange(e.target.value)}
-                        placeholder="Enter starting location"
+                        onFocus={() => setShowSourceSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowSourceSuggestions(false), 200)}
+                        placeholder="e.g. Taj Mahal, Agra"
                         className="pl-10 gov-input"
+                        autoComplete="off"
                       />
+                      {/* Source Autocomplete Dropdown */}
+                      {showSourceSuggestions && sourceSuggestions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-50 max-h-56 overflow-y-auto animate-fade-in">
+                          {sourceSuggestions.map((s, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              className="w-full text-left px-4 py-3 text-sm hover:bg-primary/10 transition-colors border-b border-border/30 last:border-b-0 flex items-start gap-3"
+                              onMouseDown={() => handleSourceSelect(s.display_name, s.lat, s.lon)}
+                            >
+                              <MapPin className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                              <span className="text-foreground/90 leading-snug line-clamp-2">{s.display_name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {showSourceSuggestions && sourceAutoLoading && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-50 p-4 text-center text-sm text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" />
+                          Searching locations...
+                        </div>
+                      )}
                     </div>
                     <Button 
                       variant="outline" 
@@ -237,7 +293,7 @@ export default function RoutePlanner() {
                       onClick={handleCurrentLocation}
                       disabled={isLocating}
                       title="Use Current Location"
-                      className="shrink-0 h-[46px] w-[46px]" // matching gov-input height
+                      className="shrink-0 h-[46px] w-[46px]"
                     >
                       {isLocating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Target className="w-5 h-5" />}
                     </Button>
@@ -248,14 +304,39 @@ export default function RoutePlanner() {
                 <div className="space-y-2">
                   <Label htmlFor="destination">Destination</Label>
                   <div className="relative">
-                    <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-destructive" />
+                    <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-destructive z-10" />
                     <Input
                       id="destination"
                       value={destination}
                       onChange={(e) => handleDestinationChange(e.target.value)}
-                      placeholder="Enter destination"
+                      onFocus={() => setShowDestSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowDestSuggestions(false), 200)}
+                      placeholder="e.g. India Gate, New Delhi"
                       className="pl-10 gov-input"
+                      autoComplete="off"
                     />
+                    {/* Destination Autocomplete Dropdown */}
+                    {showDestSuggestions && destSuggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-50 max-h-56 overflow-y-auto animate-fade-in">
+                        {destSuggestions.map((s, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            className="w-full text-left px-4 py-3 text-sm hover:bg-primary/10 transition-colors border-b border-border/30 last:border-b-0 flex items-start gap-3"
+                            onMouseDown={() => handleDestSelect(s.display_name, s.lat, s.lon)}
+                          >
+                            <Navigation className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                            <span className="text-foreground/90 leading-snug line-clamp-2">{s.display_name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {showDestSuggestions && destAutoLoading && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-50 p-4 text-center text-sm text-muted-foreground">
+                        <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" />
+                        Searching locations...
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -288,7 +369,7 @@ export default function RoutePlanner() {
                 {/* Search Button */}
                 <Button
                   onClick={handleSearch}
-                  className="w-full"
+                  className="w-full h-14 text-lg rounded-xl shadow-glow-primary hover:scale-[1.02] transition-transform duration-300 font-semibold mt-4"
                   size="lg"
                   disabled={!source || !destination || isSearching}
                 >
@@ -304,8 +385,8 @@ export default function RoutePlanner() {
 
                 {/* API Error Notice */}
                 {apiError && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    Using cached route data
+                  <p className="text-sm text-destructive font-medium text-center mt-2 animate-fade-in">
+                    {apiError instanceof Error ? apiError.message : 'Could not find routes for these locations'}
                   </p>
                 )}
 
@@ -317,8 +398,10 @@ export default function RoutePlanner() {
                     size="sm"
                     className="w-full"
                     onClick={() => {
-                      setSource('Mumbai');
-                      setDestination('Pune');
+                      setSource('Mumbai, Maharashtra');
+                      setSourceCoords({ lat: 19.0760, lon: 72.8777 });
+                      setDestination('Pune, Maharashtra');
+                      setDestCoords({ lat: 18.5204, lon: 73.8567 });
                     }}
                   >
                     Mumbai → Pune
@@ -329,14 +412,14 @@ export default function RoutePlanner() {
           </div>
 
           {/* Results Panel */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 animate-slide-up" style={{ animationDelay: '200ms' }}>
             {routes.length === 0 ? (
-              <div className="gov-card text-center py-16">
-                <RouteIcon className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+              <div className="glass-card text-center py-20 bg-white/30 dark:bg-black/20 border border-white/20">
+                <RouteIcon className="w-20 h-20 text-muted-foreground/30 mx-auto mb-6 animate-pulse" />
+                <h3 className="text-2xl font-bold text-foreground mb-3">
                   No Routes Yet
                 </h3>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground text-lg">
                   Enter your source and destination to find available routes
                 </p>
               </div>
@@ -355,10 +438,10 @@ export default function RoutePlanner() {
                 {routes.map((route, idx) => (
                   <div
                     key={route.id}
-                    className={`gov-card cursor-pointer transition-all duration-300 ${
+                    className={`glass-card cursor-pointer transition-all duration-300 transform ${
                       selectedRoute?.id === route.id
-                        ? 'ring-2 ring-accent shadow-glow'
-                        : 'hover:shadow-lg'
+                        ? 'ring-2 ring-primary shadow-glow-primary scale-[1.02] bg-white/70 dark:bg-primary/5'
+                        : 'hover:shadow-xl hover:-translate-y-1 bg-white/40 dark:bg-black/30'
                     }`}
                     style={{ animationDelay: `${idx * 100}ms` }}
                     onClick={() => setSelectedRoute(route)}

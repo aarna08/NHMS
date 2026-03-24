@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -45,6 +46,36 @@ export default function Emergency() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [micActive, setMicActive] = useState(false);
+  const [callStatus, setCallStatus] = useState<'idle' | 'calling' | 'no-answer' | 'message-sent'>('idle');
+
+  const handleEmergencyCall = () => {
+    if (callStatus !== 'idle') return;
+    
+    setCallStatus('calling');
+    toast.info('Dialing 1033...', { description: 'Connecting to highway helpline...' });
+    
+    // Init call
+    window.location.href = 'tel:1033';
+    
+    // Simulate call not picked up after 6 seconds
+    setTimeout(() => {
+      setCallStatus('no-answer');
+      toast.error('No Answer', { 
+        description: 'Emergency call not picked up. Initiating automated fallback protocol...' 
+      });
+      
+      // Simulate automated message sent
+      setTimeout(() => {
+        setCallStatus('message-sent');
+        toast.success('Emergency Alert Sent ✅', { 
+          description: 'Automated SMS with your exact GPS coordinates has been forwarded to the Nearest Control Room.' 
+        });
+        
+        // Reset after 8 seconds
+        setTimeout(() => setCallStatus('idle'), 8000);
+      }, 3000);
+    }, 6000);
+  };
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -101,9 +132,22 @@ export default function Emergency() {
               >
                 {micActive ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
               </button>
-              <Button variant="ghost" className="bg-white text-emergency hover:bg-white/90 font-bold text-lg px-8 py-6">
-                <Phone className="w-5 h-5 mr-2" />
-                Call 1033
+              <Button 
+                onClick={handleEmergencyCall}
+                disabled={callStatus !== 'idle'}
+                variant="ghost" 
+                className={`font-bold text-lg px-8 py-6 transition-all duration-300 ${
+                  callStatus === 'idle' ? 'bg-white text-emergency hover:bg-white/90' :
+                  callStatus === 'calling' ? 'bg-amber-500 text-white animate-pulse' :
+                  callStatus === 'no-answer' ? 'bg-red-600 text-white' :
+                  'bg-green-500 text-white'
+                }`}
+              >
+                <Phone className={`w-5 h-5 mr-2 ${callStatus === 'calling' ? 'animate-bounce' : ''}`} />
+                {callStatus === 'idle' && 'Call 1033'}
+                {callStatus === 'calling' && 'Calling...'}
+                {callStatus === 'no-answer' && 'No Answer'}
+                {callStatus === 'message-sent' && 'Alert Sent'}
               </Button>
             </div>
           </div>

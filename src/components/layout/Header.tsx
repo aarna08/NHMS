@@ -42,9 +42,9 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-primary shadow-lg">
+    <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-background/80 border-b border-border/40 shadow-sm transition-all duration-300">
       <div className="gov-container">
-        <div className="flex items-center justify-between h-16 md:h-20">
+        <div className="flex items-center justify-between h-20">
           {/* Logo and Title */}
           <Link to="/" className="flex items-center gap-3 group">
             <img 
@@ -52,7 +52,7 @@ export function Header() {
               alt="NHMS Logo" 
               className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover shadow-glow"
             />
-            <h1 className="hidden sm:block text-primary-foreground font-bold text-lg md:text-xl leading-tight">
+            <h1 className="hidden sm:block text-foreground font-bold text-lg md:text-xl tracking-wide">
               NHMS
             </h1>
           </Link>
@@ -63,7 +63,7 @@ export function Header() {
               <>
                 <Link 
                   to={getDashboardLink()} 
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium"
+                  className="text-foreground/80 hover:text-primary transition-colors font-medium"
                 >
                   Dashboard
                 </Link>
@@ -71,13 +71,13 @@ export function Header() {
                   <>
                     <Link 
                       to="/route-planner" 
-                      className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium"
+                      className="text-foreground/80 hover:text-primary transition-colors font-medium"
                     >
                       Route Planner
                     </Link>
                     <Link 
                       to="/emergency" 
-                      className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium"
+                      className="text-foreground/80 hover:text-primary transition-colors font-medium"
                     >
                       Emergency
                     </Link>
@@ -85,7 +85,7 @@ export function Header() {
                 )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="text-primary-foreground gap-2">
+                    <Button variant="ghost" className="text-foreground gap-2 hover:bg-muted/50">
                       <User className="w-4 h-4" />
                       {user?.name}
                       <ChevronDown className="w-4 h-4" />
@@ -114,7 +114,7 @@ export function Header() {
               <>
                 <Link 
                   to="/login" 
-                  className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium"
+                  className="text-foreground/80 hover:text-primary transition-colors font-medium"
                 >
                   Login
                 </Link>
@@ -126,16 +126,20 @@ export function Header() {
           </nav>
 
           {/* Emergency Helpline Badge */}
-          <div className="hidden lg:flex items-center gap-2 bg-emergency/90 px-4 py-2 rounded-lg">
+          <a
+            href="tel:1033"
+            className="hidden lg:flex items-center gap-2 bg-emergency/90 px-4 py-2 rounded-lg cursor-pointer hover:bg-emergency transition-colors duration-200 hover:scale-105 active:scale-95 transform"
+            title="Call Highway Emergency Helpline 1033"
+          >
             <Phone className="w-4 h-4 text-emergency-foreground animate-pulse" />
             <span className="text-emergency-foreground font-semibold text-sm">
               Emergency: 1033
             </span>
-          </div>
+          </a>
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-primary-foreground p-2"
+            className="md:hidden text-foreground p-2 hover:bg-muted/50 rounded-md transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -144,13 +148,13 @@ export function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-primary-foreground/20 animate-fade-in">
+          <div className="md:hidden py-4 border-t border-border/40 animate-fade-in bg-background/95 backdrop-blur-xl absolute top-full left-0 w-full px-4 shadow-lg pb-6">
             <nav className="flex flex-col gap-2">
               {isAuthenticated ? (
                 <>
                   <Link 
                     to={getDashboardLink()} 
-                    className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium py-2"
+                    className="text-foreground/80 hover:text-primary transition-colors font-medium py-2"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Dashboard
@@ -159,25 +163,25 @@ export function Header() {
                     <>
                       <Link 
                         to="/route-planner" 
-                        className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium py-2"
+                        className="text-foreground/80 hover:text-primary transition-colors font-medium py-2"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Route Planner
                       </Link>
                       <Link 
                         to="/emergency" 
-                        className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium py-2"
+                        className="text-foreground/80 hover:text-primary transition-colors font-medium py-2"
                         onClick={() => setMobileMenuOpen(false)}
                       >
                         Emergency
                       </Link>
                     </>
                   )}
-                  <div className="flex items-center gap-2 py-2 text-primary-foreground/70">
+                  <div className="flex items-center gap-2 py-2 text-foreground/70">
                     <User className="w-4 h-4" />
                     {user?.name}
                   </div>
-                  <Button variant="ghost" onClick={handleLogout} className="justify-start text-primary-foreground/80">
+                  <Button variant="ghost" onClick={handleLogout} className="justify-start text-foreground/80 hover:text-destructive hover:bg-destructive/10">
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
                   </Button>
@@ -186,26 +190,30 @@ export function Header() {
                 <>
                   <Link 
                     to="/login" 
-                    className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium py-2"
+                    className="text-foreground/80 hover:text-primary transition-colors font-medium py-2"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Login
                   </Link>
                   <Link 
                     to="/register" 
-                    className="text-primary-foreground/80 hover:text-primary-foreground transition-colors font-medium py-2"
+                    className="text-foreground/80 hover:text-primary transition-colors font-medium py-2"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Register
                   </Link>
                 </>
               )}
-              <div className="flex items-center gap-2 bg-emergency/90 px-4 py-2 rounded-lg mt-2">
+              <a
+                href="tel:1033"
+                className="flex items-center gap-2 bg-emergency/90 px-4 py-2 rounded-lg mt-2 cursor-pointer hover:bg-emergency transition-colors duration-200 active:scale-95 transform"
+                title="Call Highway Emergency Helpline 1033"
+              >
                 <Phone className="w-4 h-4 text-emergency-foreground animate-pulse" />
                 <span className="text-emergency-foreground font-semibold text-sm">
                   Emergency: 1033
                 </span>
-              </div>
+              </a>
             </nav>
           </div>
         )}

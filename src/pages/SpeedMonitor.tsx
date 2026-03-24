@@ -180,22 +180,14 @@ export default function SpeedMonitor() {
         const ctx = audioContextRef.current;
         const now = ctx.currentTime;
 
-        // Different beep patterns per warning level
+        // Prolonged beep patterns per warning level (approx 4-5 seconds)
         const beepConfigs = [
-          // Level 1: Single short warning beep
-          [{ freq: 880, start: 0, dur: 0.3 }],
-          // Level 2: Double urgent beep
-          [
-            { freq: 1100, start: 0, dur: 0.25 },
-            { freq: 1100, start: 0.35, dur: 0.25 },
-          ],
-          // Level 3: Triple rapid alarm beep
-          [
-            { freq: 1400, start: 0, dur: 0.15 },
-            { freq: 1400, start: 0.2, dur: 0.15 },
-            { freq: 1400, start: 0.4, dur: 0.15 },
-            { freq: 1800, start: 0.6, dur: 0.4 },
-          ],
+          // Level 1: Repeated warning beep for ~4.5 seconds
+          Array.from({ length: 5 }, (_, i) => ({ freq: 880, start: i * 0.9, dur: 0.6 })),
+          // Level 2: Urgent repeated beep for ~4.5 seconds
+          Array.from({ length: 8 }, (_, i) => ({ freq: 1100, start: i * 0.6, dur: 0.4 })),
+          // Level 3: Rapid alarm beep for ~5 seconds
+          Array.from({ length: 15 }, (_, i) => ({ freq: i % 2 === 0 ? 1400 : 1800, start: i * 0.35, dur: 0.25 })),
         ];
 
         const beeps = beepConfigs[Math.min(level - 1, 2)];
@@ -249,7 +241,7 @@ export default function SpeedMonitor() {
         setShowWarningBanner(true);
         setActiveWarningMessage(warningStages[0].description);
         playWarningBeep(1);
-        setWarningCountdown(4);
+        setWarningCountdown(8);
       }
     } else {
       // Driver slowed down — reset the warning escalation
@@ -318,9 +310,9 @@ export default function SpeedMonitor() {
         triggerEmergencyCall();
         setWarningCountdown(null);
       } else {
-        setWarningCountdown(4);
+        setWarningCountdown(8);
       }
-    }, 4000);
+    }, 8000);
 
     return () => {
       if (warningTimerRef.current) {
@@ -482,20 +474,22 @@ export default function SpeedMonitor() {
     <Layout>
       <div className="gov-container py-8">
         {/* Header */}
-        <div className="mb-8 animate-fade-in">
+        <div className="mb-10 animate-fade-in text-center lg:text-left">
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
-            className="mb-4 gap-2 text-muted-foreground hover:text-foreground"
+            className="mb-6 gap-2 text-muted-foreground hover:text-foreground bg-background/50 hover:bg-background/80 backdrop-blur-sm transition-all rounded-full px-6"
           >
             <ArrowLeft className="w-4 h-4" />
             Back
           </Button>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">Speed Monitor</h1>
-              <p className="text-muted-foreground">
-                Real-time speed monitoring with overspeeding alerts & emergency call
+              <h1 className="text-4xl lg:text-5xl font-extrabold text-foreground mb-3 tracking-tight">
+                Speed <span className="text-gradient">Monitor</span>
+              </h1>
+              <p className="text-lg text-muted-foreground font-light">
+                Real-time intelligent speed tracking with automated escalation protocols
               </p>
             </div>
             <div className="flex items-center gap-4 flex-wrap">
@@ -665,7 +659,7 @@ export default function SpeedMonitor() {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between mt-1.5 text-[10px] text-muted-foreground uppercase tracking-wider">
+              <div className="flex justify-between mt-1.5 text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
                 <span>Warning</span>
                 <span>Urgent</span>
                 <span>Emergency Call</span>
@@ -687,13 +681,13 @@ export default function SpeedMonitor() {
           </TabsList>
 
           <TabsContent value="speedometer">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-slide-up" style={{ animationDelay: '100ms' }}>
               {/* Speedometer Panel */}
-              <div className="gov-card text-center">
-                <div className="relative w-64 h-64 mx-auto mb-8">
+              <div className="glass-card text-center bg-white/40 dark:bg-black/20 border-white/20">
+                <div className="relative w-72 h-72 mx-auto mb-10 flex items-center justify-center">
                   {/* Outer Ring */}
                   <div
-                    className={`absolute inset-0 rounded-full border-8 transition-all duration-300 ${getRingBorderClass()}`}
+                    className={`absolute inset-0 rounded-full border-[12px] transition-all duration-300 ${getRingBorderClass()}`}
                   />
 
                   {/* Speed Display */}
@@ -718,10 +712,10 @@ export default function SpeedMonitor() {
                 </div>
 
                 {/* Speed Limit Bar */}
-                <div className="mb-6">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-muted-foreground">Current Speed</span>
-                    <span className="font-medium">
+                <div className="mb-8">
+                  <div className="flex justify-between text-sm mb-3">
+                    <span className="text-muted-foreground font-medium">Current Speed</span>
+                    <span className="font-bold text-foreground">
                       Limit: {currentSpeedLimit} km/h ({vehicleLabels[vehicleType]})
                     </span>
                   </div>
@@ -758,14 +752,16 @@ export default function SpeedMonitor() {
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center justify-center gap-4">
-                  <Button onClick={handleReset} variant="outline" size="lg">
-                    <RotateCcw className="w-5 h-5" />
+                <div className="flex items-center justify-center gap-6 mt-6 pt-6 border-t border-border/50">
+                  <Button onClick={handleReset} variant="outline" size="lg" className="rounded-full shadow-sm">
+                    <RotateCcw className="w-5 h-5 mr-2" />
+                    Reset
                   </Button>
                   <Button
                     onClick={() => setSoundEnabled(!soundEnabled)}
                     variant="ghost"
                     size="icon"
+                    className="w-12 h-12 rounded-full bg-background/50 backdrop-blur-sm shadow-sm"
                   >
                     {soundEnabled ? (
                       <Volume2 className="w-5 h-5" />
@@ -779,43 +775,49 @@ export default function SpeedMonitor() {
               {/* Info Panel */}
               <div className="space-y-6">
                 {/* Vehicle Info */}
-                <div className="gov-card">
-                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <VehicleIcon className="w-5 h-5 text-accent" />
+                <div className="glass-card bg-white/40 dark:bg-black/20 border-white/20">
+                  <h3 className="font-bold text-lg text-foreground mb-4 flex items-center gap-3 border-b border-border/50 pb-3">
+                    <VehicleIcon className="w-6 h-6 text-primary drop-shadow-sm" />
                     Vehicle Information
                   </h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Vehicle Number</span>
-                      <span className="font-medium">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center bg-background/40 p-3 rounded-lg border border-border/30">
+                      <span className="text-muted-foreground font-medium">Vehicle Number</span>
+                      <span className="font-bold text-foreground tracking-wide">
                         {user?.vehicleNumber || 'Not Set'}
                       </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Vehicle Type</span>
-                      <span className="font-medium text-accent">
+                    <div className="flex justify-between items-center bg-background/40 p-3 rounded-lg border border-border/30">
+                      <span className="text-muted-foreground font-medium">Vehicle Type</span>
+                      <span className="font-bold text-primary">
                         {vehicleLabels[vehicleType]}
                       </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Driver</span>
-                      <span className="font-medium">{user?.name}</span>
+                    <div className="flex justify-between items-center bg-background/40 p-3 rounded-lg border border-border/30">
+                      <span className="text-muted-foreground font-medium">Driver</span>
+                      <span className="font-bold text-foreground tracking-wide">{user?.name}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Monitoring Status</span>
+                    <div className="flex justify-between items-center bg-background/40 p-3 rounded-lg border border-border/30">
+                      <span className="text-muted-foreground font-medium">Road Section</span>
+                      <span className="font-bold text-foreground">
+                        {speedData.location}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center bg-background/40 p-3 rounded-lg border border-border/30">
+                      <span className="text-muted-foreground font-medium">Monitoring Status</span>
                       <span
-                        className={`font-medium ${
-                          isMonitoring ? 'text-success' : 'text-muted-foreground'
+                        className={`font-bold tracking-wide ${
+                          isMonitoring ? 'text-success drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'text-muted-foreground'
                         }`}
                       >
                         {isMonitoring ? 'Active' : 'Inactive'}
                       </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">GPS Status</span>
+                    <div className="flex justify-between items-center bg-background/40 p-3 rounded-lg border border-border/30">
+                      <span className="text-muted-foreground font-medium">GPS Status</span>
                       <span
-                        className={`font-medium ${
-                          isTracking ? 'text-success' : 'text-muted-foreground'
+                        className={`font-bold tracking-wide ${
+                          isTracking ? 'text-success drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'text-muted-foreground'
                         }`}
                       >
                         {isTracking ? 'Connected' : 'Disconnected'}
@@ -824,10 +826,32 @@ export default function SpeedMonitor() {
                   </div>
                 </div>
 
+                {/* Legend */}
+                <div className="glass-card bg-white/40 dark:bg-black/20 border-white/20">
+                  <h3 className="font-bold text-lg text-foreground mb-4 flex items-center gap-3 border-b border-border/50 pb-3">
+                    <ShieldAlert className="w-6 h-6 text-accent drop-shadow-sm" />
+                    Speed Status Legend
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 bg-background/40 p-3 rounded-lg border border-border/30">
+                      <div className="w-4 h-4 rounded-full bg-success shadow-[0_0_10px_rgba(34,197,94,0.5)]" />
+                      <span className="text-sm font-medium">Under Speed Limit</span>
+                    </div>
+                    <div className="flex items-center gap-4 bg-background/40 p-3 rounded-lg border border-border/30">
+                      <div className="w-4 h-4 rounded-full bg-warning shadow-[0_0_10px_rgba(234,179,8,0.5)] animate-pulse" />
+                      <span className="text-sm font-medium">Warning (Near Limit)</span>
+                    </div>
+                    <div className="flex items-center gap-4 bg-background/40 p-3 rounded-lg border border-border/30">
+                      <div className="w-4 h-4 rounded-full bg-destructive shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse" />
+                      <span className="text-sm font-medium">Overspeeding (Alerts)</span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Warning Escalation Status */}
-                <div className="gov-card">
-                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <ShieldAlert className="w-5 h-5 text-warning" />
+                <div className="glass-card bg-white/40 dark:bg-black/20 border-white/20">
+                  <h3 className="font-bold text-lg text-foreground mb-4 flex items-center gap-3 border-b border-border/50 pb-3">
+                    <ShieldAlert className="w-6 h-6 text-warning drop-shadow-sm" />
                     Overspeed Warning System
                   </h3>
                   <div className="space-y-3">
@@ -889,9 +913,9 @@ export default function SpeedMonitor() {
                 </div>
 
                 {/* Speed Limits Reference */}
-                <div className="gov-card">
-                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Gauge className="w-5 h-5 text-accent" />
+                <div className="glass-card bg-white/40 dark:bg-black/20 border-white/20">
+                  <h3 className="font-bold text-lg text-foreground mb-4 flex items-center gap-3 border-b border-border/50 pb-3">
+                    <Gauge className="w-6 h-6 text-accent drop-shadow-sm" />
                     Speed Limits — {vehicleLabels[vehicleType]}
                   </h3>
                   <div className="space-y-2">
