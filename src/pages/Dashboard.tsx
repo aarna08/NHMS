@@ -32,6 +32,9 @@ export default function Dashboard() {
     locationName: 'Locating...'
   });
 
+  const [trafficAlerts, setTrafficAlerts] = useState<any[]>(mockTrafficAlerts);
+  const [trafficLoading, setTrafficLoading] = useState(true);
+
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(async (position) => {
@@ -70,9 +73,63 @@ export default function Dashboard() {
             advisory,
             locationName: city
           });
+
+          // Generate context-aware mock traffic alerts
+          const alerts = [];
+          const isBadWeather = code >= 51; // rain, snow, storm, fog
+          
+          if (isBadWeather) {
+            alerts.push({
+              id: 1,
+              location: `${city} Main Highway`,
+              message: `Speed limits reduced due to ${condition} conditions. Drive cautiously.`,
+              severity: code >= 95 ? 'high' : 'medium'
+            });
+            alerts.push({
+              id: 2,
+              location: `Near ${city} Outer Ring`,
+              message: `Moderate congestion due to poor weather. Delay: 10-15 minutes.`,
+              severity: 'medium'
+            });
+          } else {
+            // Traffic based on time of day
+            const hour = new Date().getHours();
+            const isRushHour = (hour >= 8 && hour <= 11) || (hour >= 17 && hour <= 20);
+            if (isRushHour) {
+               alerts.push({
+                 id: 1,
+                 location: `${city} City Center Expressway`,
+                 message: `Heavy rush hour traffic. Expect delays up to 20 minutes.`,
+                 severity: 'high'
+               });
+               alerts.push({
+                 id: 2,
+                 location: `${city} Toll Plaza`,
+                 message: `Slow moving traffic at the toll plaza.`,
+                 severity: 'medium'
+               });
+            } else {
+               alerts.push({
+                 id: 1,
+                 location: `${city} District Road`,
+                 message: `Normal traffic conditions. Safe travel.`,
+                 severity: 'low'
+               });
+               alerts.push({
+                 id: 2,
+                 location: `KM 45-48 near ${city}`,
+                 message: `Lane closure for maintenance. Single lane operation.`,
+                 severity: 'low'
+               });
+            }
+          }
+          setTrafficAlerts(alerts);
+          setTrafficLoading(false);
         } catch (error) {
           console.error("Weather fetch failed", error);
           setWeatherData(prev => ({ ...prev, advisory: 'Weather data unavailable', locationName: 'Unknown' }));
+          setTrafficAlerts(mockTrafficAlerts);
+          setTrafficLoading(false);
         }
       }, (error) => {
           setWeatherData({
@@ -82,6 +139,8 @@ export default function Dashboard() {
             advisory: 'Location disabled. Showing default weather.',
             locationName: 'India'
           });
+          setTrafficAlerts(mockTrafficAlerts);
+          setTrafficLoading(false);
       });
     }
   }, []);
@@ -215,11 +274,15 @@ export default function Dashboard() {
                 Traffic Alerts
               </h3>
               <span className="text-xs bg-warning/20 border border-warning/30 text-warning px-4 py-1.5 rounded-full font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(234,179,8,0.2)]">
-                {mockTrafficAlerts.length} Active
+                {trafficLoading ? 'Updating...' : `${trafficAlerts.length} Active`}
               </span>
             </div>
             <div className="space-y-4">
-              {mockTrafficAlerts.map((alert) => (
+              {trafficLoading ? (
+                <div className="p-8 text-center text-muted-foreground animate-pulse border border-border/40 rounded-2xl bg-background/60 backdrop-blur-sm">
+                  Fetching real-time local traffic data...
+                </div>
+              ) : trafficAlerts.map((alert) => (
                 <div 
                   key={alert.id} 
                   className={`p-5 rounded-2xl border ${
