@@ -205,7 +205,7 @@ export default function Index() {
                 <ChevronRight className="w-5 h-5 ml-2" />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="xl" className="h-14 px-8 text-lg rounded-full border-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground transition-all">
+            <Button asChild variant="outline" size="xl" className="h-14 px-8 text-lg rounded-full border-2 border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:border-primary-foreground transition-all">
               <a href="tel:1033">
                 <Phone className="w-5 h-5 mr-3" />
                 Emergency 1033
@@ -265,9 +265,10 @@ export default function Index() {
               <h3 className="text-2xl font-bold mb-8 text-foreground text-center group-hover:text-accent transition-colors">Team Points of Contact</h3>
               <div className="space-y-4">
                 {[
-                  { name: 'Aarav Sharma', role: 'Event Coordinator', phone: '+91 98765 43210' },
-                  { name: 'Riya Gupta', role: 'Technical Support', phone: '+91 98765 43211' },
-                  { name: 'Karan Patel', role: 'Operations Head', phone: '+91 98765 43212' },
+                  { name: 'Aarna Garg', role: 'Team Member', phone: '+91 93684 10466' },
+                  { name: 'Garima Singh', role: 'Team Member', phone: '+91 76960 33864' },
+                  { name: 'Kirti', role: 'Team Member', phone: '+91 85275 03823' },
+                  { name: 'Akilah', role: 'Team Member', phone: '+91 90582 02922' },
                 ].map((person, idx) => (
                   <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-background/50 hover:bg-muted transition-colors border border-border/50 hover:border-accent/30">
                     <div className="flex items-center gap-4">
