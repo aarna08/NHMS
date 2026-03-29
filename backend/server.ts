@@ -711,6 +711,119 @@ app.get('/api/nearby-emergency', async (req, res) => {
   res.json({ success: true, centers: sortedCenters });
 });
 
+// ─── Speed Limit (OSM Overpass Integration) ──────────────────────────
+const SPEED_LIMIT_CACHE = new Map<string, { speed: number; roadName: string; timestamp: number }>();
+const CACHE_TTL = 1000 * 60 * 5; // 5 minutes
+
+function inferSpeedLimit(highway: string): number {
+  switch (highway) {
+    case 'motorway': return 120;
+    case 'trunk': return 100;
+    case 'primary': return 80;
+    case 'secondary': return 60;
+    case 'tertiary': return 50;
+    case 'residential': return 35;
+    case 'service': return 25;
+    case 'unclassified': return 40;
+    case 'living_street': return 20;
+    default: return 50;
+  }
+}
+
+async function getRoadNameFallback(lat: number, lon: number): Promise<string> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+    const res = await axios.get(url, { headers: { 'User-Agent': 'NHMS-SpeedMonitor/1.0' }, timeout: 3000 });
+    const data = res.data as any;
+    // Try to get specific road name from address components
+    const addr = data?.address;
+    return addr?.road || addr?.suburb || addr?.city || data?.display_name?.split(',')[0] || 'Unknown Road';
+  } catch (e) {
+    return 'Unknown Road (Offline)';
+  }
+}
+
+const OVERPASS_SERVERS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://lz4.overpass-api.de/api/interpreter',
+  'https://z.overpass-api.de/api/interpreter'
+];
+
+app.get('/api/speed-limit', async (req, res) => {
+  const { lat, lon } = req.query;
+  if (!lat || !lon) return res.status(400).json({ success: false, speed: null });
+
+  const latitude = parseFloat(lat as string);
+  const longitude = parseFloat(lon as string);
+  
+  // Cache key with ~110m precision (3 decimal places)
+  const cacheKey = `${latitude.toFixed(3)},${longitude.toFixed(3)}`;
+  const now = Date.now();
+
+  if (SPEED_LIMIT_CACHE.has(cacheKey)) {
+    const cached = SPEED_LIMIT_CACHE.get(cacheKey)!;
+    if (now - cached.timestamp < CACHE_TTL) {
+      console.log(`[SpeedLimit] Returning cached data for ${cacheKey}`);
+      return res.json({ success: true, speed: cached.speed, roadName: cached.roadName });
+    }
+  }
+
+  let elements = [];
+  let errorDetails = '';
+
+  // Try multiple Overpass servers for redundancy
+  for (const baseUrl of OVERPASS_SERVERS) {
+    try {
+      const query = `[out:json][timeout:5];way(around:50, ${latitude}, ${longitude})[highway];out tags;`;
+      const url = `${baseUrl}?data=${encodeURIComponent(query)}`;
+      
+      const response = await axios.get(url, { 
+        headers: { 'User-Agent': 'NHMS-SpeedMonitor/1.0' },
+        timeout: 4000 
+      });
+      
+      elements = (response.data as any)?.elements || [];
+      if (elements.length > 0 || response.status === 200) {
+        break; // Success or definitely no road here
+      }
+    } catch (error) {
+      errorDetails = error instanceof Error ? error.message : String(error);
+      console.warn(`[SpeedLimit] Server ${baseUrl} failed: ${errorDetails}`);
+      continue; // Try next server
+    }
+  }
+
+  try {
+    if (elements.length > 0) {
+      const tags = (elements[0] as any).tags || {};
+      const roadName = tags.name || tags.ref || 'Unnamed Road';
+      const highwayType = tags.highway || 'unclassified';
+      
+      let speedLimit = 50;
+      if (tags.maxspeed) {
+        const speedMatch = tags.maxspeed.match(/\d+/);
+        speedLimit = speedMatch ? parseInt(speedMatch[0]) : inferSpeedLimit(highwayType);
+        if (tags.maxspeed.includes('mph')) speedLimit = Math.round(speedLimit * 1.609);
+      } else {
+        speedLimit = inferSpeedLimit(highwayType);
+      }
+
+      SPEED_LIMIT_CACHE.set(cacheKey, { speed: speedLimit, roadName, timestamp: now });
+      return res.json({ success: true, speed: speedLimit, roadName });
+    }
+
+    // Fallback: Use Reverse Geocoding for road name even if speed limit fails
+    const fallbackRoadName = await getRoadNameFallback(latitude, longitude);
+    SPEED_LIMIT_CACHE.set(cacheKey, { speed: 50, roadName: fallbackRoadName, timestamp: now });
+    res.json({ success: true, speed: 50, roadName: fallbackRoadName });
+
+  } catch (error) {
+    console.warn('[SpeedLimit] Processing failed:', error instanceof Error ? error.message : error);
+    const fallbackRoadName = await getRoadNameFallback(latitude, longitude);
+    res.json({ success: true, speed: 50, roadName: fallbackRoadName });
+  }
+});
+
 // ─── Reverse Geocode ─────────────────────────────────────────────────
 app.get('/api/geocode/reverse', async (req, res) => {
   const { lat, lon } = req.query;
