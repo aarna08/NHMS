@@ -20,6 +20,7 @@ import {
   BellRing,
   PhoneCall,
   Timer,
+  Loader2,
   ChevronDown,
 } from 'lucide-react';
 import { SpeedData, VehicleType } from '@/types';
@@ -38,34 +39,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
-// Vehicle-specific speed limits per road section
-const vehicleSpeedLimits: Record<string, Record<string, number>> = {
-  car: {
-    'Expressway - Normal': 120,
-    'Ghat Section - Khandala': 50,
-    'Tunnel - Lonavala': 70,
-    'Highway - Pune Approach': 100,
-  },
-  motorcycle: {
-    'Expressway - Normal': 80,
-    'Ghat Section - Khandala': 40,
-    'Tunnel - Lonavala': 50,
-    'Highway - Pune Approach': 70,
-  },
-  truck: {
-    'Expressway - Normal': 80,
-    'Ghat Section - Khandala': 30,
-    'Tunnel - Lonavala': 50,
-    'Highway - Pune Approach': 60,
-  },
+// Road types and their descriptions for UI (icons/styling)
+const roadTypeInfo: Record<string, { label: string; icon: string }> = {
+  motorway: { label: 'Motorway', icon: '🛣️' },
+  trunk: { label: 'Highway', icon: '🛣️' },
+  primary: { label: 'Main Road', icon: '📍' },
+  secondary: { label: 'Secondary Road', icon: '📍' },
+  residential: { label: 'Residential', icon: '🏠' },
+  unclassified: { label: 'Standard Road', icon: '🚗' },
 };
-
-const roadSections = [
-  { name: 'Expressway - Normal', type: 'expressway' },
-  { name: 'Ghat Section - Khandala', type: 'ghat' },
-  { name: 'Tunnel - Lonavala', type: 'tunnel' },
-  { name: 'Highway - Pune Approach', type: 'highway' },
-];
 
 type VehicleCategory = 'car' | 'motorcycle' | 'truck';
 
@@ -139,6 +121,9 @@ export default function SpeedMonitor() {
   const [showEmergencyDialog, setShowEmergencyDialog] = useState(false);
   const [emergencyCallTriggered, setEmergencyCallTriggered] = useState(false);
   const [warningCountdown, setWarningCountdown] = useState<number | null>(null);
+  const [roadName, setRoadName] = useState('Detecting road...');
+  const [isLoadingSpeedLimit, setIsLoadingSpeedLimit] = useState(false);
+  const lastFetchedCoords = useRef<{ lat: number; lon: number } | null>(null);
 
   // Refs
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -154,9 +139,8 @@ export default function SpeedMonitor() {
     locationHistory,
   } = useLiveLocation();
 
-  // Derived speed limit based on vehicle type and road section
-  const currentSection = roadSections[currentSectionIndex];
-  const currentSpeedLimit = vehicleSpeedLimits[vehicleType][currentSection.name];
+  // Derived speed limit
+  const currentSpeedLimit = speedData.speedLimit;
 
   // Get speed from GPS or simulation
   const displaySpeed =
@@ -341,14 +325,24 @@ export default function SpeedMonitor() {
     return <Navigate to="/login" replace />;
   }
 
-  // Update speedData limits when vehicle or section changes
+  // Update speedData limits when vehicle changes (adjusting the base limit by vehicle factor)
   useEffect(() => {
-    setSpeedData((prev) => ({
-      ...prev,
-      speedLimit: currentSpeedLimit,
-      location: currentSection.name,
-    }));
-  }, [currentSpeedLimit, currentSection.name]);
+    const vehicleFactors: Record<VehicleCategory, number> = {
+      car: 1.0,
+      motorcycle: 0.8,
+      truck: 0.6
+    };
+    
+    setSpeedData((prev) => {
+      // If we have a base speed limit from API, apply vehicle factor
+      // Note: We'll store the UN-ADJUSTED limit in a ref or just recalculate
+      return {
+        ...prev,
+        // The API gives legal limit for cars usually, we adjust for others
+        speedLimit: Math.round(prev.speedLimit * (vehicleFactors[vehicleType] / vehicleFactors.car)),
+      };
+    });
+  }, [vehicleType]);
 
   // ── Simulate speed changes (fallback when not using real GPS) ──
   useEffect(() => {
@@ -356,26 +350,24 @@ export default function SpeedMonitor() {
 
     const interval = setInterval(() => {
       setSpeedData((prev) => {
-        const fluctuation = Math.random() * 30 - 10;
+        const fluctuation = Math.random() * 20 - 5;
         let newSpeed = Math.max(0, Math.min(180, prev.currentSpeed + fluctuation));
 
-        // Occasionally force overspeeding for demo
-        if (Math.random() > 0.7) {
-          newSpeed = currentSpeedLimit + Math.random() * 50;
+        // Occasionally force overspeeding for demo if monitoring
+        if (isMonitoring && Math.random() > 0.8) {
+          newSpeed = currentSpeedLimit + Math.random() * 30;
         }
 
         return {
           ...prev,
           currentSpeed: Math.round(newSpeed),
-          speedLimit: currentSpeedLimit,
           isOverspeeding: newSpeed > currentSpeedLimit,
-          location: currentSection.name,
         };
       });
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [isMonitoring, currentSection, currentSpeedLimit, useRealLocation, isTracking]);
+  }, [isMonitoring, currentSpeedLimit, useRealLocation, isTracking]);
 
   // ── Update speed data from real GPS ────────────────────────────
   useEffect(() => {
@@ -388,22 +380,48 @@ export default function SpeedMonitor() {
     setSpeedData((prev) => ({
       ...prev,
       currentSpeed: gpsSpeed,
-      speedLimit: currentSpeedLimit,
       isOverspeeding,
-      location: currentSection.name,
+      location: roadName,
     }));
-  }, [liveLocation, useRealLocation, isMonitoring, currentSpeedLimit, currentSection.name]);
+  }, [liveLocation, useRealLocation, isMonitoring, currentSpeedLimit, roadName]);
 
-  // ── Change road section periodically ───────────────────────────
+  // ── Fetch Real Speed Limit from Backend API ──────────────────────
+  const fetchRealSpeedLimit = useCallback(async (lat: number, lon: number) => {
+    // Check if moved enough (~50m) to justify a new fetch
+    if (lastFetchedCoords.current) {
+      const dLat = Math.abs(lastFetchedCoords.current.lat - lat);
+      const dLon = Math.abs(lastFetchedCoords.current.lon - lon);
+      if (dLat < 0.0005 && dLon < 0.0005) return; // approx 50m
+    }
+
+    setIsLoadingSpeedLimit(true);
+    try {
+      const response = await fetch(`http://localhost:3000/api/speed-limit?lat=${lat}&lon=${lon}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setRoadName(data.roadName);
+        setSpeedData(prev => ({
+          ...prev,
+          speedLimit: data.speed,
+          location: data.roadName
+        }));
+        lastFetchedCoords.current = { lat, lon };
+      }
+    } catch (e) {
+      console.error('Failed to fetch speed limit:', e);
+    } finally {
+      setIsLoadingSpeedLimit(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!isMonitoring) return;
+    if (useRealLocation && liveLocation) {
+      fetchRealSpeedLimit(liveLocation.latitude, liveLocation.longitude);
+    }
+  }, [liveLocation, useRealLocation, fetchRealSpeedLimit]);
 
-    const sectionInterval = setInterval(() => {
-      setCurrentSectionIndex((prev) => (prev + 1) % roadSections.length);
-    }, 15000);
-
-    return () => clearInterval(sectionInterval);
-  }, [isMonitoring]);
+  // Remove manual section cycling logic
 
   // ── Helpers ────────────────────────────────────────────────────
   const getSpeedColor = () => {
@@ -444,12 +462,13 @@ export default function SpeedMonitor() {
   const handleReset = () => {
     setSpeedData({
       currentSpeed: 0,
-      speedLimit: currentSpeedLimit,
+      speedLimit: 50,
       isOverspeeding: false,
       warningCount: 0,
-      location: currentSection.name,
+      location: 'Detecting...',
     });
-    setCurrentSectionIndex(0);
+    setRoadName('Detecting...');
+    lastFetchedCoords.current = null;
     setWarningLevel(0);
     setOverspeedStartTime(null);
     setShowWarningBanner(false);
@@ -745,9 +764,13 @@ export default function SpeedMonitor() {
                 <div className="flex items-center justify-center gap-2 text-muted-foreground mb-6">
                   <MapPin className="w-4 h-4" />
                   <span>
-                    {useRealLocation && liveLocation
-                      ? `${liveLocation.latitude.toFixed(4)}, ${liveLocation.longitude.toFixed(4)}`
-                      : speedData.location}
+                    {isLoadingSpeedLimit ? (
+                      <span className="flex items-center gap-1">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Fetching speed limit...
+                      </span>
+                    ) : (
+                      roadName
+                    )}
                   </span>
                 </div>
 
@@ -919,33 +942,37 @@ export default function SpeedMonitor() {
                     Speed Limits — {vehicleLabels[vehicleType]}
                   </h3>
                   <div className="space-y-2">
-                    {roadSections.map((section, idx) => {
-                      const limit = vehicleSpeedLimits[vehicleType][section.name];
+                    {/* Current Road Status */}
+                    <div className="bg-accent/10 border border-accent p-3 rounded-lg mb-4">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-accent font-bold">Current Road</span>
+                        <span className="font-bold text-accent">{currentSpeedLimit} km/h</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{speedData.location}</p>
+                    </div>
+
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Typical Limits</p>
+                    {Object.entries(roadTypeInfo).map(([type, info]) => {
+                      const baseLimit = 
+                        type === 'motorway' ? 120 :
+                        type === 'trunk' ? 100 :
+                        type === 'primary' ? 80 :
+                        type === 'secondary' ? 60 :
+                        type === 'residential' ? 35 : 50;
+                      
+                      const vehicleFactors: Record<string, number> = { car: 1.0, motorcycle: 0.8, truck: 0.6 };
+                      const limit = Math.round(baseLimit * (vehicleFactors[vehicleType] / vehicleFactors.car));
+
                       return (
                         <div
-                          key={section.type}
-                          className={`flex justify-between p-3 rounded-lg transition-colors ${
-                            idx === currentSectionIndex
-                              ? 'bg-accent/10 border border-accent'
-                              : 'bg-muted/50'
-                          }`}
+                          key={type}
+                          className="flex justify-between p-2 rounded bg-muted/30 text-sm"
                         >
-                          <span
-                            className={
-                              idx === currentSectionIndex
-                                ? 'text-accent font-medium'
-                                : 'text-muted-foreground'
-                            }
-                          >
-                            {section.name}
+                          <span className="flex items-center gap-2">
+                            <span>{info.icon}</span>
+                            <span className="text-muted-foreground">{info.label}</span>
                           </span>
-                          <span
-                            className={`font-medium ${
-                              idx === currentSectionIndex ? 'text-accent' : ''
-                            }`}
-                          >
-                            {limit} km/h
-                          </span>
+                          <span className="font-medium">{limit} km/h</span>
                         </div>
                       );
                     })}
