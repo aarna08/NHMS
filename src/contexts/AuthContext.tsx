@@ -17,7 +17,8 @@ interface AuthContextType {
     email: string,
     password: string,
     vehicleNumber?: string
-  ) => Promise<boolean>
+  ) => Promise<{ success: boolean; requireOtp?: boolean; message?: string }>
+  verifyRegistration: (email: string, otp: string) => Promise<{ success: boolean; message?: string }>
   logout: () => void
 }
 
@@ -68,16 +69,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       const data = await res.json();
       
+      if (data.success) {
+        if (data.requireOtp) {
+          return { success: true, requireOtp: true, message: data.message };
+        }
+        // Fallback for immediate login if OTP is ever disabled
+        setUser(data.user);
+        localStorage.setItem('nhms_user', JSON.stringify(data.user));
+        localStorage.setItem('nhms_token', data.token);
+        return { success: true };
+      }
+      return { success: false, message: data.message || 'Registration failed' };
+    } catch (err: any) {
+      console.error('Register Error:', err);
+      return { success: false, message: err.message || 'Registration failed' };
+    }
+  }
+
+  // ✅ VERIFY REGISTRATION OTP
+  const verifyRegistration = async (email: string, otp: string) => {
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/verify-registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, otp }),
+      });
+      const data = await res.json();
+      
       if (data.success && data.token) {
         setUser(data.user);
         localStorage.setItem('nhms_user', JSON.stringify(data.user));
         localStorage.setItem('nhms_token', data.token);
-        return true;
+        return { success: true };
       }
-      throw new Error(data.message || 'Registration failed');
+      return { success: false, message: data.message || 'Verification failed' };
     } catch (err: any) {
-      console.error('Register Error:', err);
-      throw err;
+      console.error('Verification Error:', err);
+      return { success: false, message: err.message || 'Verification failed' };
     }
   }
 
@@ -94,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
+        verifyRegistration,
         logout,
       }}
     >
