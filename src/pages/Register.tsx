@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Car, AlertCircle, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 
 export default function Register() {
-  const { register } = useAuth();
+  const { register, verifyRegistration } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: '',
@@ -17,7 +17,9 @@ export default function Register() {
     vehicleNumber: '',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false); 
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,44 +35,68 @@ export default function Register() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
+    e.preventDefault();
+    setError('');
 
-  // Validate password match
-  if (formData.password !== formData.confirmPassword) {
-    setError('Passwords do not match');
-    return;
-  }
-
-  // Validate all password requirements
-  const allRequirementsMet = passwordRequirements.every(req => req.met);
-  if (!allRequirementsMet) {
-    setError('Please meet all password requirements');
-    return;
-  }
-
-  setIsLoading(true);
-
-  try {
-    const success = await register(
-      formData.name,
-      formData.email,
-      formData.password,
-      formData.vehicleNumber
-    );
-
-    if (success) {
-      navigate('/dashboard');
-    } else {
-      setError('Signup failed. Please try again.');
+    // Validate password match
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
     }
-  } catch (err: any) {
-    console.error('REGISTER PAGE ERROR:', err);
-    setError(err?.message || 'Signup failed. Please try again.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+
+    // Validate all password requirements
+    const allRequirementsMet = passwordRequirements.every(req => req.met);
+    if (!allRequirementsMet) {
+      setError('Please meet all password requirements');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const result = await register(
+        formData.name,
+        formData.email,
+        formData.password,
+        formData.vehicleNumber
+      );
+
+      if (result.success) {
+        if (result.requireOtp) {
+          setShowOtp(true);
+        } else {
+          navigate('/dashboard');
+        }
+      } else {
+        setError(result.message || 'Signup failed. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('REGISTER PAGE ERROR:', err);
+      setError(err?.message || 'Signup failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const result = await verifyRegistration(formData.email, otp);
+      if (result.success) {
+        navigate('/dashboard');
+      } else {
+        setError(result.message || 'Invalid OTP. Please try again.');
+      }
+    } catch (err: any) {
+      console.error('OTP VERIFICATION ERROR:', err);
+      setError(err?.message || 'Verification failed. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
   return (
@@ -116,136 +142,184 @@ export default function Register() {
             <div className="lg:hidden w-14 h-14 rounded-full bg-primary flex items-center justify-center mx-auto mb-4">
               <Car className="w-7 h-7 text-primary-foreground" />
             </div>
-            <h2 className="text-2xl font-bold text-foreground">Create your account</h2>
-            <p className="text-muted-foreground mt-2">Register as a highway traveller</p>
+            <h2 className="text-2xl font-bold text-foreground">
+              {showOtp ? 'Verify your email' : 'Create your account'}
+            </h2>
+            <p className="text-muted-foreground mt-2">
+              {showOtp ? `We've sent a code to ${formData.email}` : 'Register as a highway traveller'}
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Full Name */}
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Enter your full name"
-                required
-                className="gov-input"
-              />
-            </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter your email"
-                required
-                className="gov-input"
-              />
-            </div>
-
-            {/* Vehicle Number */}
-            <div className="space-y-2">
-              <Label htmlFor="vehicleNumber">Vehicle Number (Optional)</Label>
-              <Input
-                id="vehicleNumber"
-                name="vehicleNumber"
-                type="text"
-                value={formData.vehicleNumber}
-                onChange={handleChange}
-                placeholder="e.g., MH-01-AB-1234"
-                className="gov-input"
-              />
-            </div>
-
-            {/* Password */}
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
+          {!showOtp ? (
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Full Name */}
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
                 <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
+                  id="name"
+                  name="name"
+                  type="text"
+                  value={formData.name}
                   onChange={handleChange}
-                  placeholder="Create a password"
+                  placeholder="Enter your full name"
                   required
-                  className="gov-input pr-10"
+                  className="gov-input"
                 />
-                <button
+              </div>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Enter your email"
+                  required
+                  className="gov-input"
+                />
+              </div>
+
+              {/* Vehicle Number */}
+              <div className="space-y-2">
+                <Label htmlFor="vehicleNumber">Vehicle Number (Optional)</Label>
+                <Input
+                  id="vehicleNumber"
+                  name="vehicleNumber"
+                  type="text"
+                  value={formData.vehicleNumber}
+                  onChange={handleChange}
+                  placeholder="e.g., MH-01-AB-1234"
+                  className="gov-input"
+                />
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Create a password"
+                    required
+                    className="gov-input pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {/* Password Requirements */}
+                <div className="space-y-1 mt-2">
+                  {passwordRequirements.map((req, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs">
+                      <CheckCircle2
+                        className={`w-3 h-3 ${req.met ? 'text-success' : 'text-muted-foreground'}`}
+                      />
+                      <span className={req.met ? 'text-success' : 'text-muted-foreground'}>
+                        {req.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Confirm your password"
+                    required
+                    className="gov-input pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-lg">
+                  <AlertCircle className="w-4 h-4" />
+                  {error}
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+                {isLoading ? 'Creating account...' : 'Create Account'}
+              </Button>
+
+              {/* Login Link */}
+              <p className="text-center text-sm text-muted-foreground">
+                Already have an account?{' '}
+                <Link to="/login" className="text-accent font-medium hover:underline">
+                  Sign in here
+                </Link>
+              </p>
+            </form>
+          ) : (
+            <form onSubmit={handleOtpSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="otp">One-Time Password</Label>
+                <Input
+                  id="otp"
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="Enter 6-digit OTP"
+                  required
+                  className="gov-input text-center text-2xl tracking-[0.5em] font-bold h-14"
+                />
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Enter the 6-digit code sent to your email.
+                </p>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-lg">
+                  <AlertCircle className="w-4 h-4" />
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <Button type="submit" className="w-full" size="lg" disabled={isLoading || otp.length !== 6}>
+                  {isLoading ? 'Verifying...' : 'Verify & Complete'}
+                </Button>
+                <Button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowOtp(false)}
+                  disabled={isLoading}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
+                  Back to Registration
+                </Button>
               </div>
-              {/* Password Requirements */}
-              <div className="space-y-1 mt-2">
-                {passwordRequirements.map((req, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-xs">
-                    <CheckCircle2
-                      className={`w-3 h-3 ${req.met ? 'text-success' : 'text-muted-foreground'}`}
-                    />
-                    <span className={req.met ? 'text-success' : 'text-muted-foreground'}>
-                      {req.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Confirm Password */}
-<div className="space-y-2">
-  <Label htmlFor="confirmPassword">Confirm Password</Label>
-  <div className="relative">
-    <Input
-      id="confirmPassword"
-      name="confirmPassword"
-      type={showConfirmPassword ? 'text' : 'password'}
-      value={formData.confirmPassword}
-      onChange={handleChange}
-      placeholder="Confirm your password"
-      required
-      className="gov-input pr-10"
-    />
-    <button
-      type="button"
-      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-    >
-      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-    </button>
-  </div>
-</div>
-            {/* Error Message */}
-            {error && (
-              <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 p-3 rounded-lg">
-                <AlertCircle className="w-4 h-4" />
-                {error}
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-              {isLoading ? 'Creating account...' : 'Create Account'}
-            </Button>
-
-            {/* Login Link */}
-            <p className="text-center text-sm text-muted-foreground">
-              Already have an account?{' '}
-              <Link to="/login" className="text-accent font-medium hover:underline">
-                Sign in here
-              </Link>
-            </p>
-          </form>
+            </form>
+          )}
         </div>
       </div>
     </div>
