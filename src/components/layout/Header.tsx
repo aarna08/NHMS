@@ -20,6 +20,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import logoImage from '@/assets/logo.jpeg';
+import { NotificationCenter } from './NotificationCenter';
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -83,6 +84,7 @@ export function Header() {
                     </Link>
                   </>
                 )}
+                <NotificationCenter />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="text-foreground gap-2 hover:bg-muted/50">
@@ -144,6 +146,13 @@ export function Header() {
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
+
+          {/* Mobile Notification Icon (Visible when authenticated) */}
+          {isAuthenticated && (
+            <div className="md:hidden mr-2">
+              <NotificationCenter />
+            </div>
+          )}
         </div>
 
         {/* Mobile Menu */}

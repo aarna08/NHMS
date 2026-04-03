@@ -29,7 +29,7 @@ export function BroadcastBanner() {
   const handleDismiss = async () => {
     setBroadcast(null);
     try {
-      await fetch('http://localhost:3000/api/admin/state', {
+      await fetch(`${API_BASE_URL}/api/admin/state`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ broadcast: null })
