@@ -175,6 +175,21 @@ app.get('/api/system-health', async (_req, res) => {
   });
 });
 
+// Broadcasts API
+app.get('/api/broadcasts', async (_req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      return res.json({ success: true, broadcasts: globalAdminState.broadcastHistory || [] });
+    }
+    const broadcasts = await Broadcast.find().sort({ timestamp: -1 }).limit(20);
+    res.json({ success: true, broadcasts });
+  } catch (error) {
+    console.error('[API] Broadcasts fetch failed:', error);
+    res.json({ success: true, broadcasts: globalAdminState.broadcastHistory || [] });
+  }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 
