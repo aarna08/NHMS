@@ -1031,7 +1031,7 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // 2. Legacy Fallback Logic (Regex-based)
-    const routeMatch = msg.match(/(?:route|distance|toll|travel|trip|go|how to reach|fare)\s+(?:from\s+)?(.+?)\s+(?:to|->|→)\s+(.+)/i);
+    const routeMatch = msg.match(/(?:routes?|distance|tolls?|travel|trip|go|how to reach|fares?)\s+(?:from\s+|between\s+)?(.+?)\s+(?:to|->|→|and)\s+(.+)/i);
     if (routeMatch) {
       const source = routeMatch[1].trim();
       const destination = routeMatch[2].trim();
