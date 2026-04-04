@@ -1115,6 +1115,14 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
+    // Safety and Driving Conditions
+    if (msg.includes('safe') || msg.includes('condition') || msg.includes('drive today')) {
+      return res.json({
+        success: true,
+        reply: `🛡️ **Highway Safety Status**\n\nThe national highways are typically safe to drive today! Our systems are actively monitoring conditions.\n\n**Always remember to:**\n✅ Wear your seatbelt\n✅ Stay within assigned speed limits\n✅ Maintain a safe distance from other vehicles\n✅ Take a short break every 2 hours on long trips\n\nCheck the Weather and Speed sections on your dashboard for live route updates! Drive safe. 🚗`,
+      });
+    }
+
     // FASTag
     if (msg.includes('fastag') || msg.includes('tag')) {
       return res.json({
