@@ -7,7 +7,6 @@ interface RoutesApiResponse {
   timestamp?: string;
 }
 
-// Use the local backend instead of Supabase
 import { API_URL } from '@/lib/api-config';
 
 async function fetchRoutes(
